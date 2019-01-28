@@ -135,6 +135,7 @@ ngx_http_security_headers_filter(ngx_http_request_t *r)
     ngx_table_elt_t                       *h_x_xss;
     ngx_table_elt_t                       *h_x_fo;
     ngx_http_security_headers_loc_conf_t  *slcf;
+    ngx_uint_t i;
 
     slcf = ngx_http_get_module_loc_conf(r, ngx_http_security_headers_module);
 
@@ -216,7 +217,7 @@ ngx_http_security_headers_filter(ngx_http_request_t *r)
 
     part = &r->headers_out.headers.part;
     header = part->elts;
-    for (ngx_uint_t i = 0 ; ; i++ ) {
+    for ( i = 0 ; ; i++ ) {    
         if ( i >= part->nelts) {
             if ( part->next == NULL ) {
                     break;
