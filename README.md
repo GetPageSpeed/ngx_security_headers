@@ -11,6 +11,36 @@ http {
 }
 ```
 
+Running `curl -IL http://example.com/` will yield additional headers:
+
+```
+HTTP/1.1 200 OK
+<Server: header removed>
+Date: Tue, 21 May 2019 16:15:46 GMT
+Content-Type: text/html; charset=UTF-8
+Vary: Accept-Encoding
+Accept-Ranges: bytes
+Connection: keep-alive
+X-Frame-Options: SAMEORIGIN  <-----------
+X-XSS-Protection: 1; mode=block <-----------
+```
+
+Running `curl -IL http://example.com/some.css` (or `some.js`) will yield additional headers:
+
+```
+HTTP/1.1 200 OK
+<Server: header removed>
+Date: Tue, 21 May 2019 16:15:46 GMT
+Content-Type: text/css; charset=UTF-8
+Vary: Accept-Encoding
+Accept-Ranges: bytes
+Connection: keep-alive
+X-Frame-Options: SAMEORIGIN  <-----------
+X-XSS-Protection: 1; mode=block <-----------
+X-Content-Type-Options: nosniff <-----------
+```
+
+
 ## Key Features
 
 * Plug-n-Play: the default set of security headers can be enabled with `security_headers on;` in your NGINX configuration
