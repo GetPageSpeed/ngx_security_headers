@@ -19,10 +19,10 @@
 
 typedef struct {
     ngx_flag_t                 enable;
-    
-    ngx_uint_t                 xss;  
-    ngx_uint_t                 fo; 
-    
+
+    ngx_uint_t                 xss;
+    ngx_uint_t                 fo;
+
     ngx_hash_t                 nosniff_types;
     ngx_array_t                *types_keys;
 
@@ -45,8 +45,8 @@ static ngx_conf_enum_t  ngx_http_frame_options[] = {
 
 static ngx_int_t ngx_http_security_headers_filter(ngx_http_request_t *r);
 static void *ngx_http_security_headers_create_loc_conf(ngx_conf_t *cf);
-static char *ngx_http_security_headers_merge_loc_conf(ngx_conf_t *cf, void *parent,
-    void *child);
+static char *ngx_http_security_headers_merge_loc_conf(ngx_conf_t *cf,
+    void *parent, void *child);
 static ngx_int_t ngx_http_security_headers_init(ngx_conf_t *cf);
 
 ngx_str_t  ngx_http_security_headers_default_nosniff_types[] = {
@@ -63,29 +63,29 @@ static ngx_command_t  ngx_http_security_headers_commands[] = {
       ngx_conf_set_flag_slot,
       NGX_HTTP_LOC_CONF_OFFSET,
       offsetof( ngx_http_security_headers_loc_conf_t, enable ),
-      NULL },    
-    
+      NULL },
+
     { ngx_string("security_headers_nosniff_types"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_1MORE,
       ngx_http_types_slot,
       NGX_HTTP_LOC_CONF_OFFSET,
       offsetof(ngx_http_security_headers_loc_conf_t, types_keys),
-      &ngx_http_security_headers_default_nosniff_types[0] },      
-      
+      &ngx_http_security_headers_default_nosniff_types[0] },
+
     { ngx_string("security_headers_xss"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE1,
       ngx_conf_set_enum_slot,
       NGX_HTTP_LOC_CONF_OFFSET,
       offsetof(ngx_http_security_headers_loc_conf_t, xss),
       ngx_http_xss_protection },
-      
+
      { ngx_string("security_headers_frame"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE1,
       ngx_conf_set_enum_slot,
       NGX_HTTP_LOC_CONF_OFFSET,
       offsetof(ngx_http_security_headers_loc_conf_t, fo),
-      ngx_http_frame_options },     
-  
+      ngx_http_frame_options },
+
       ngx_null_command
 };
 
@@ -100,8 +100,8 @@ static ngx_http_module_t  ngx_http_security_headers_module_ctx = {
     NULL,                                  /* create server configuration */
     NULL,                                  /* merge server configuration */
 
-    ngx_http_security_headers_create_loc_conf,   /* create location configuration */
-    ngx_http_security_headers_merge_loc_conf     /* merge location configuration */
+    ngx_http_security_headers_create_loc_conf, /* create location config */
+    ngx_http_security_headers_merge_loc_conf     /* merge location config */
 };
 
 
@@ -135,17 +135,18 @@ ngx_http_security_headers_filter(ngx_http_request_t *r)
     ngx_table_elt_t                       *h_x_xss;
     ngx_table_elt_t                       *h_x_fo;
     ngx_http_security_headers_loc_conf_t  *slcf;
-    ngx_uint_t i;
+    ngx_uint_t                             i;
 
     slcf = ngx_http_get_module_loc_conf(r, ngx_http_security_headers_module);
 
     if (1 != slcf->enable) {
         return ngx_http_next_header_filter(r);
     }
-    
+
     /* add X-Content-Type-Options to output */
-    if (r->headers_out.status == NGX_HTTP_OK 
-            && ngx_http_test_content_type(r, &slcf->nosniff_types) != NULL) {
+    if (r->headers_out.status == NGX_HTTP_OK
+        && ngx_http_test_content_type(r, &slcf->nosniff_types) != NULL)
+    {
         h_x_cto = ngx_list_push(&r->headers_out.headers);
         if (h_x_cto == NULL) {
             return NGX_ERROR;
@@ -155,10 +156,11 @@ ngx_http_security_headers_filter(ngx_http_request_t *r)
         ngx_str_set(&h_x_cto->key, "X-Content-Type-Options");
         ngx_str_set(&h_x_cto->value, "nosniff");
     }
-    
+
     /* Add X-XSS-Protection */
     if (r->headers_out.status != NGX_HTTP_NOT_MODIFIED
-            && NGX_HTTP_SECURITY_HEADER_OMIT != slcf->xss) {
+        && NGX_HTTP_SECURITY_HEADER_OMIT != slcf->xss)
+    {
         h_x_xss = ngx_list_push(&r->headers_out.headers);
         if (h_x_xss == NULL) {
             return NGX_ERROR;
@@ -174,10 +176,11 @@ ngx_http_security_headers_filter(ngx_http_request_t *r)
             ngx_str_set(&h_x_xss->value, "0");
         }
     }
-    
+
      /* Add X-Frame-Options */
     if (r->headers_out.status != NGX_HTTP_NOT_MODIFIED
-            && NGX_HTTP_SECURITY_HEADER_OMIT != slcf->fo) {
+        && NGX_HTTP_SECURITY_HEADER_OMIT != slcf->fo)
+    {
         h_x_fo = ngx_list_push(&r->headers_out.headers);
         if (h_x_fo == NULL) {
             return NGX_ERROR;
@@ -189,9 +192,9 @@ ngx_http_security_headers_filter(ngx_http_request_t *r)
             ngx_str_set(&h_x_fo->value, "SAMEORIGIN");
         } else if (NGX_HTTP_FO_HEADER_DENY == slcf->fo) {
             ngx_str_set(&h_x_fo->value, "DENY");
-        } 
+        }
     }
-    
+
     /* Deal with Server header */
     ngx_table_elt_t   *h_server;
     h_server = r->headers_out.server;
@@ -199,28 +202,28 @@ ngx_http_security_headers_filter(ngx_http_request_t *r)
         h_server = ngx_list_push(&r->headers_out.headers);
         if (h_server == NULL) {
             return NGX_ERROR;
-        }     
+        }
         /*
          * h->key.data = (u_char *) "Server";
          * h->key.len = sizeof("Server") - 1;
          * h->value.data = (u_char *) "";
          * h->value.len = sizeof("") - 1;
          */
-        
+
         r->headers_out.server = h_server;
-    } 
+    }
     h_server->hash = 0;
-    
+
     /* Find X-Powered-By header */
     ngx_list_part_t *part = NULL;
     ngx_table_elt_t *header = NULL;
 
     part = &r->headers_out.headers.part;
     header = part->elts;
-    for ( i = 0 ; ; i++ ) {    
-        if ( i >= part->nelts) {
-            if ( part->next == NULL ) {
-                    break;
+    for ( i = 0 ; ; i++ ) {
+        if (i >= part->nelts) {
+            if (part->next == NULL) {
+                break;
             }
 
             part = part->next;
@@ -228,14 +231,16 @@ ngx_http_security_headers_filter(ngx_http_request_t *r)
             i = 0;
         }
         if (header[i].hash == 0) {
-             continue;
+            continue;
         }
-        if ( ngx_strcasecmp(header[i].key.data, (u_char *)"x-powered-by") == 0 ) {
+        if (ngx_strcasecmp(header[i].key.data,
+                (u_char *)"x-powered-by") == 0)
+        {
             header[i].hash = 0;
             break;
         }
     }
-   
+
     /* proceed to the next handler in chain */
 
     return ngx_http_next_header_filter(r);
@@ -251,7 +256,7 @@ ngx_http_security_headers_create_loc_conf(ngx_conf_t *cf)
     if (conf == NULL) {
         return NULL;
     }
-    
+
     conf->xss =    NGX_CONF_UNSET_UINT;
     conf->fo  =    NGX_CONF_UNSET_UINT;
     conf->enable = NGX_CONF_UNSET_UINT;
@@ -261,13 +266,14 @@ ngx_http_security_headers_create_loc_conf(ngx_conf_t *cf)
 
 
 static char *
-ngx_http_security_headers_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
+ngx_http_security_headers_merge_loc_conf(ngx_conf_t *cf, void *parent,
+    void *child)
 {
     ngx_http_security_headers_loc_conf_t *prev = parent;
     ngx_http_security_headers_loc_conf_t *conf = child;
 
     ngx_conf_merge_value( conf->enable, prev->enable, 0 );
-    
+
     if (ngx_http_merge_types(cf, &conf->types_keys, &conf->nosniff_types,
                              &prev->types_keys, &prev->nosniff_types,
                              ngx_http_security_headers_default_nosniff_types)
@@ -275,12 +281,11 @@ ngx_http_security_headers_merge_loc_conf(ngx_conf_t *cf, void *parent, void *chi
     {
         return NGX_CONF_ERROR;
     }
-    
+
     ngx_conf_merge_uint_value(conf->xss, prev->xss,
                               NGX_HTTP_XSS_HEADER_BLOCK);
-
     ngx_conf_merge_uint_value(conf->fo, prev->fo,
-                              NGX_HTTP_FO_HEADER_SAME);    
+                              NGX_HTTP_FO_HEADER_SAME);
 
     return NGX_CONF_OK;
 }
