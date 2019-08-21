@@ -1,0 +1,37 @@
+language: c
+compiler:
+  - clang
+  - gcc
+env:
+  matrix:
+    - NGINX_VERSION=1.16.0
+    - NGINX_VERSION=1.17.2    -
+addons:
+  apt:
+    packages:
+      - libpcre3-dev
+      - libssl-dev
+      - perl
+      - cpanminus
+cache:
+  ccache: true
+  directories:
+    - $HOME/perl5
+before_install:
+  - test $TRAVIS_BRANCH != coverity_scan -o ${TRAVIS_JOB_NUMBER##*.} = 1 || exit 0
+  - cpanm --notest --local-lib=$HOME/perl5 Test::Nginx
+install:
+  - test $TRAVIS_BRANCH != coverity_scan || exit 0
+  - wget -O - http://nginx.org/download/nginx-${NGINX_VERSION}.tar.gz | tar -xzf -
+  - cd nginx-${NGINX_VERSION}
+  - ./configure --with-debug --add-module=..
+  - make -j2
+  - export PATH=$(pwd)/objs:$PATH
+  - cd ..
+script:
+  - test $TRAVIS_BRANCH != coverity_scan || exit 0
+  - PERL5LIB=$HOME/perl5/lib/perl5 TEST_NGINX_VERBOSE=true prove -v
+after_failure:
+  - cat t/servroot/conf/nginx.conf
+  - cat t/servroot/access.log
+  - cat t/servroot/error.log
