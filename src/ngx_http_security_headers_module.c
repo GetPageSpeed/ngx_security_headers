@@ -189,18 +189,9 @@ ngx_http_security_headers_filter(ngx_http_request_t *r)
 
 
     /* Deal with Server header */
-    ngx_table_elt_t   *h_server;
-    h_server = r->headers_out.server;
-    if (h_server == NULL) {
-        h_server = ngx_list_push(&r->headers_out.headers);
-        if (h_server == NULL) {
-            return NGX_ERROR;
-        }
-        h_server->value.len = 0;
-        h_server->value.data =  (u_char *) "";
-        h_server->hash = 0;
-        r->headers_out.server = h_server;
-    }
+    ngx_str_set(&key, "server");
+    ngx_str_set(&val, "");
+    ngx_set_headers_out_by_search(r, &key, &val);
 
     /* proceed to the next handler in chain */
 
