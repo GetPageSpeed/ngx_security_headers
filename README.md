@@ -108,6 +108,11 @@ It's easy to install the module in your stable nginx instance dynamically:
 Then add it at the top of your `nginx.conf`:
 
     load_module modules/ngx_http_security_headers_module.so;
+    
+In case you use ModSecurity NGINX module, make sure it's loaded last, like so:
+
+    load_module modules/ngx_http_security_headers_module.so;
+    load_module modules/ngx_http_modsecurity_module.so;
 
 ### Other platforms
 

@@ -48,6 +48,8 @@ static void *ngx_http_security_headers_create_loc_conf(ngx_conf_t *cf);
 static char *ngx_http_security_headers_merge_loc_conf(ngx_conf_t *cf,
     void *parent, void *child);
 static ngx_int_t ngx_http_security_headers_init(ngx_conf_t *cf);
+static ngx_int_t ngx_set_headers_out_by_search(ngx_http_request_t *r,
+    ngx_str_t *key, ngx_str_t *value);
 
 ngx_str_t  ngx_http_security_headers_default_nosniff_types[] = {
     ngx_string("text/css"),
@@ -125,17 +127,16 @@ ngx_module_t  ngx_http_security_headers_module = {
 
 static ngx_http_output_header_filter_pt  ngx_http_next_header_filter;
 
-
 /* header filter handler */
 
 static ngx_int_t
 ngx_http_security_headers_filter(ngx_http_request_t *r)
 {
-    ngx_table_elt_t                       *h_x_cto;
-    ngx_table_elt_t                       *h_x_xss;
-    ngx_table_elt_t                       *h_x_fo;
     ngx_http_security_headers_loc_conf_t  *slcf;
-    ngx_uint_t                             i;
+
+    ngx_str_t   key;
+    ngx_str_t   val;
+
 
     slcf = ngx_http_get_module_loc_conf(r, ngx_http_security_headers_module);
 
@@ -147,53 +148,45 @@ ngx_http_security_headers_filter(ngx_http_request_t *r)
     if (r->headers_out.status == NGX_HTTP_OK
         && ngx_http_test_content_type(r, &slcf->nosniff_types) != NULL)
     {
-        h_x_cto = ngx_list_push(&r->headers_out.headers);
-        if (h_x_cto == NULL) {
-            return NGX_ERROR;
-        }
+        ngx_str_set(&key, "X-Content-Type-Options");
+        ngx_str_set(&val, "nosniff");
 
-        h_x_cto->hash = 1;
-        ngx_str_set(&h_x_cto->key, "X-Content-Type-Options");
-        ngx_str_set(&h_x_cto->value, "nosniff");
+        ngx_set_headers_out_by_search(r, &key, &val);
     }
 
     /* Add X-XSS-Protection */
     if (r->headers_out.status != NGX_HTTP_NOT_MODIFIED
         && NGX_HTTP_SECURITY_HEADER_OMIT != slcf->xss)
     {
-        h_x_xss = ngx_list_push(&r->headers_out.headers);
-        if (h_x_xss == NULL) {
-            return NGX_ERROR;
-        }
-
-        h_x_xss->hash = 1;
-        ngx_str_set(&h_x_xss->key, "X-XSS-Protection");
+        ngx_str_set(&key, "X-XSS-Protection");
         if (NGX_HTTP_XSS_HEADER_ON == slcf->xss) {
-            ngx_str_set(&h_x_xss->value, "1");
+            ngx_str_set(&val, "1");
         } else if (NGX_HTTP_XSS_HEADER_BLOCK == slcf->xss) {
-            ngx_str_set(&h_x_xss->value, "1; mode=block");
+            ngx_str_set(&val, "1; mode=block");
         } else if (NGX_HTTP_XSS_HEADER_OFF == slcf->xss) {
-            ngx_str_set(&h_x_xss->value, "0");
+            ngx_str_set(&val, "0");
         }
+        ngx_set_headers_out_by_search(r, &key, &val);
     }
 
-     /* Add X-Frame-Options */
+    /* Add X-Frame-Options */
     if (r->headers_out.status != NGX_HTTP_NOT_MODIFIED
         && NGX_HTTP_SECURITY_HEADER_OMIT != slcf->fo)
     {
-        h_x_fo = ngx_list_push(&r->headers_out.headers);
-        if (h_x_fo == NULL) {
-            return NGX_ERROR;
-        }
-
-        h_x_fo->hash = 1;
-        ngx_str_set(&h_x_fo->key, "X-Frame-Options");
+        ngx_str_set(&key, "X-Frame-Options");
         if (NGX_HTTP_FO_HEADER_SAME == slcf->fo) {
-            ngx_str_set(&h_x_fo->value, "SAMEORIGIN");
+            ngx_str_set(&val, "SAMEORIGIN");
         } else if (NGX_HTTP_FO_HEADER_DENY == slcf->fo) {
-            ngx_str_set(&h_x_fo->value, "DENY");
+            ngx_str_set(&val, "DENY");
         }
+        ngx_set_headers_out_by_search(r, &key, &val);
     }
+
+    /* Find X-Powered-By header */
+    ngx_str_set(&key, "x-powered-by");
+    ngx_str_set(&val, "");
+    ngx_set_headers_out_by_search(r, &key, &val);
+
 
     /* Deal with Server header */
     ngx_table_elt_t   *h_server;
@@ -203,42 +196,10 @@ ngx_http_security_headers_filter(ngx_http_request_t *r)
         if (h_server == NULL) {
             return NGX_ERROR;
         }
-        /*
-         * h->key.data = (u_char *) "Server";
-         * h->key.len = sizeof("Server") - 1;
-         * h->value.data = (u_char *) "";
-         * h->value.len = sizeof("") - 1;
-         */
-
+        h_server->value.len = 0;
+        h_server->value.data =  (u_char *) "";
+        h_server->hash = 0;
         r->headers_out.server = h_server;
-    }
-    h_server->hash = 0;
-
-    /* Find X-Powered-By header */
-    ngx_list_part_t *part = NULL;
-    ngx_table_elt_t *header = NULL;
-
-    part = &r->headers_out.headers.part;
-    header = part->elts;
-    for ( i = 0 ; ; i++ ) {
-        if (i >= part->nelts) {
-            if (part->next == NULL) {
-                break;
-            }
-
-            part = part->next;
-            header = part->elts;
-            i = 0;
-        }
-        if (header[i].hash == 0) {
-            continue;
-        }
-        if (ngx_strcasecmp(header[i].key.data,
-                (u_char *)"x-powered-by") == 0)
-        {
-            header[i].hash = 0;
-            break;
-        }
     }
 
     /* proceed to the next handler in chain */
@@ -259,7 +220,7 @@ ngx_http_security_headers_create_loc_conf(ngx_conf_t *cf)
 
     conf->xss =    NGX_CONF_UNSET_UINT;
     conf->fo  =    NGX_CONF_UNSET_UINT;
-    conf->enable = NGX_CONF_UNSET_UINT;
+    conf->enable = NGX_CONF_UNSET;
 
     return conf;
 }
@@ -298,6 +259,78 @@ ngx_http_security_headers_init(ngx_conf_t *cf)
 
     ngx_http_next_header_filter = ngx_http_top_header_filter;
     ngx_http_top_header_filter = ngx_http_security_headers_filter;
+
+    return NGX_OK;
+}
+
+static ngx_int_t
+ngx_set_headers_out_by_search(ngx_http_request_t *r,
+    ngx_str_t *key, ngx_str_t *value)
+{
+    ngx_list_part_t            *part;
+    ngx_table_elt_t            *hi;
+    ngx_uint_t                  i;
+    ngx_table_elt_t            *h = NULL;
+
+    /*
+    Get the first part of the list. There is usual only one part.
+    */
+    part = &r->headers_out.headers.part;
+    hi = part->elts;
+
+    /*
+    Headers list array may consist of more than one part,
+    so loop through all of it
+    */
+    for (i = 0; /* void */ ; i++) {
+        if (i >= part->nelts) {
+            if (part->next == NULL) {
+                /* The last part, search is done. */
+                break;
+            }
+
+            part = part->next;
+            hi = part->elts;
+            i = 0;
+        }
+
+        if (hi[i].hash == 0) {
+            continue;
+        }
+
+        /*
+        Just compare the lengths and then the names case insensitively.
+        */
+        if (key->len != hi[i].key.len
+            || ngx_strcasecmp(key->data, hi[i].key.data) != 0)
+        {
+            /* This header doesn't match. */
+            continue;
+        }
+
+        h = hi;
+        break;
+    }
+    if (h == NULL) {
+        h = ngx_list_push(&r->headers_out.headers);
+    }
+    if (h == NULL) {
+        return NGX_ERROR;
+    }
+    h->key = *key;
+    h->value = *value;
+    if (value->len  == 0) {
+        h->hash = 0;
+    } else {
+        h->hash = 1;
+    }
+
+    h->lowcase_key = ngx_pnalloc(r->pool, h->key.len);
+    if (h->lowcase_key == NULL) {
+        return NGX_ERROR;
+    }
+
+    ngx_strlow(h->lowcase_key, h->key.data, h->key.len);
 
     return NGX_OK;
 }
