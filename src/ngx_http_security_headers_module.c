@@ -157,6 +157,8 @@ ngx_http_security_headers_filter(ngx_http_request_t *r)
             if (h_server == NULL) {
                 return NGX_ERROR;
             }
+            ngx_str_set(&h_server->key, "Server");
+            ngx_str_set(&h_server->value, "");
             r->headers_out.server = h_server;
         }
         h_server->hash = 0;
