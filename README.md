@@ -15,7 +15,7 @@ Running `curl -IL http://example.com/` will yield additional headers:
 
 ```
 HTTP/1.1 200 OK
-<Server: header removed>
+Server: nginx
 Date: Tue, 21 May 2019 16:15:46 GMT
 Content-Type: text/html; charset=UTF-8
 Vary: Accept-Encoding
@@ -29,7 +29,7 @@ Running `curl -IL http://example.com/some.css` (or `some.js`) will yield additio
 
 ```
 HTTP/1.1 200 OK
-<Server: header removed>
+Server: nginx
 Date: Tue, 21 May 2019 16:15:46 GMT
 Content-Type: text/css; charset=UTF-8
 Vary: Accept-Encoding
@@ -46,8 +46,8 @@ X-Content-Type-Options: nosniff <-----------
 * Plug-n-Play: the default set of security headers can be enabled with `security_headers on;` in your NGINX configuration
 * Sends `X-Content-Type-Options` only for appropriate MIME types, preserving unnecessary bits from being transferred for non-JS and non-CSS resources
 * Plays well with conditional `GET` requests: the security headers are not included there unnecessarily
-* Hides `X-Powered-By`, which often leaks PHP version information
 * Does not suffer the `add_header` directive's pitfalls
+* Hides `X-Powered-By`, which often leaks PHP version information
 * Hides `Server` header altogether, not just the version information
 
 ## Configuration directives
@@ -64,10 +64,18 @@ Enables or disables applying security headers. The default set includes:
 * `X-XSS-Protection: 1; mode=block`
 * `X-Content-Type-Options: nosniff` (for CSS and Javascript)
 
-Headers which are hidden:
+The values of these headers (or their inclusion) can be controlled with other `security_headers_*` directives below.
 
-* `X-Powered-By`
+### `hide_server_tokens`
+
+- **syntax**: `hide_server_tokens on | off`
+- **default**: `off`
+- **context**: `http`, `server`, `location`
+
+Enables hiding headers which leak software information:
+
 * `Server`
+* `X-Powered-By`
 
 ### `security_headers_xss`
 

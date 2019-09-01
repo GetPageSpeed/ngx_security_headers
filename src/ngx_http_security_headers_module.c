@@ -19,6 +19,7 @@
 
 typedef struct {
     ngx_flag_t                 enable;
+    ngx_flag_t                 hide_server_tokens;
 
     ngx_uint_t                 xss;
     ngx_uint_t                 fo;
@@ -65,6 +66,13 @@ static ngx_command_t  ngx_http_security_headers_commands[] = {
       ngx_conf_set_flag_slot,
       NGX_HTTP_LOC_CONF_OFFSET,
       offsetof( ngx_http_security_headers_loc_conf_t, enable ),
+      NULL },
+
+    { ngx_string( "hide_server_tokens" ),
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_FLAG,
+      ngx_conf_set_flag_slot,
+      NGX_HTTP_LOC_CONF_OFFSET,
+      offsetof(ngx_http_security_headers_loc_conf_t, hide_server_tokens ),
       NULL },
 
     { ngx_string("security_headers_nosniff_types"),
@@ -134,11 +142,30 @@ ngx_http_security_headers_filter(ngx_http_request_t *r)
 {
     ngx_http_security_headers_loc_conf_t  *slcf;
 
+    ngx_table_elt_t   *h_server;
+
     ngx_str_t   key;
     ngx_str_t   val;
 
-
     slcf = ngx_http_get_module_loc_conf(r, ngx_http_security_headers_module);
+
+    if (1 == slcf->hide_server_tokens) {
+        /* Hide the Server header */
+        h_server = r->headers_out.server;
+        if (h_server == NULL) {
+            h_server = ngx_list_push(&r->headers_out.headers);
+            if (h_server == NULL) {
+                return NGX_ERROR;
+            }
+            r->headers_out.server = h_server;
+        }
+        h_server->hash = 0;
+
+        /* Hide X-Powered-By header */
+        ngx_str_set(&key, "x-powered-by");
+        ngx_str_set(&val, "");
+        ngx_set_headers_out_by_search(r, &key, &val);
+    }
 
     if (1 != slcf->enable) {
         return ngx_http_next_header_filter(r);
@@ -169,6 +196,14 @@ ngx_http_security_headers_filter(ngx_http_request_t *r)
         ngx_set_headers_out_by_search(r, &key, &val);
     }
 
+#if (NGX_HTTP_SSL)
+    if (r->connection->ssl) {
+        ngx_str_set(&key, "Strict-Transport-Security");
+        ngx_str_set(&val, "max-age=63072000; includeSubDomains; preload");
+        ngx_set_headers_out_by_search(r, &key, &val);
+    }
+#endif
+
     /* Add X-Frame-Options */
     if (r->headers_out.status != NGX_HTTP_NOT_MODIFIED
         && NGX_HTTP_SECURITY_HEADER_OMIT != slcf->fo)
@@ -182,19 +217,16 @@ ngx_http_security_headers_filter(ngx_http_request_t *r)
         ngx_set_headers_out_by_search(r, &key, &val);
     }
 
-    /* Find X-Powered-By header */
-    ngx_str_set(&key, "x-powered-by");
-    ngx_str_set(&val, "");
-    ngx_set_headers_out_by_search(r, &key, &val);
+    /* Referrer-Policy: no-referrer-when-downgrade */
+    if (r->headers_out.status != NGX_HTTP_NOT_MODIFIED) {
+        ngx_str_set(&key, "Referrer-Policy");
+        ngx_str_set(&val, "no-referrer-when-downgrade");
+        ngx_set_headers_out_by_search(r, &key, &val);
+    }
 
 
-    /* Deal with Server header */
-    ngx_str_set(&key, "server");
-    ngx_str_set(&val, "");
-    ngx_set_headers_out_by_search(r, &key, &val);
 
     /* proceed to the next handler in chain */
-
     return ngx_http_next_header_filter(r);
 }
 
@@ -212,6 +244,7 @@ ngx_http_security_headers_create_loc_conf(ngx_conf_t *cf)
     conf->xss =    NGX_CONF_UNSET_UINT;
     conf->fo  =    NGX_CONF_UNSET_UINT;
     conf->enable = NGX_CONF_UNSET;
+    conf->hide_server_tokens = NGX_CONF_UNSET_UINT;
 
     return conf;
 }
@@ -225,6 +258,8 @@ ngx_http_security_headers_merge_loc_conf(ngx_conf_t *cf, void *parent,
     ngx_http_security_headers_loc_conf_t *conf = child;
 
     ngx_conf_merge_value( conf->enable, prev->enable, 0 );
+    ngx_conf_merge_value(conf->hide_server_tokens,
+                         prev->hide_server_tokens, 0 );
 
     if (ngx_http_merge_types(cf, &conf->types_keys, &conf->nosniff_types,
                              &prev->types_keys, &prev->nosniff_types,
@@ -259,62 +294,73 @@ ngx_set_headers_out_by_search(ngx_http_request_t *r,
     ngx_str_t *key, ngx_str_t *value)
 {
     ngx_list_part_t            *part;
-    ngx_table_elt_t            *hi;
     ngx_uint_t                  i;
-    ngx_table_elt_t            *h = NULL;
+    ngx_table_elt_t            *h;
+    ngx_flag_t                  matched = 0;
 
-    /*
-    Get the first part of the list. There is usual only one part.
-    */
     part = &r->headers_out.headers.part;
-    hi = part->elts;
+    h = part->elts;
 
-    /*
-    Headers list array may consist of more than one part,
-    so loop through all of it
-    */
-    for (i = 0; /* void */ ; i++) {
+    for (i = 0; /* void */; i++) {
+
         if (i >= part->nelts) {
             if (part->next == NULL) {
-                /* The last part, search is done. */
                 break;
             }
 
             part = part->next;
-            hi = part->elts;
+            h = part->elts;
             i = 0;
         }
 
-        if (hi[i].hash == 0) {
+        if (h[i].hash == 0) {
             continue;
         }
 
-        /*
-        Just compare the lengths and then the names case insensitively.
-        */
-        if (key->len != hi[i].key.len
-            || ngx_strcasecmp(key->data, hi[i].key.data) != 0)
+        if (h[i].key.len == key->len
+            && ngx_strncasecmp(h[i].key.data, key->data,
+                               h[i].key.len) == 0)
         {
-            /* This header doesn't match. */
-            continue;
+            goto matched;
         }
 
-        h = hi;
-        break;
+        /* not matched */
+        continue;
+matched:
+
+        if (value->len == 0 || matched) {
+            h[i].value.len = 0;
+            h[i].hash = 0;
+        } else {
+            h[i].value = *value;
+            h[i].hash = 1;
+        }
+
+        matched = 1;
     }
-    if (h == NULL) {
-        h = ngx_list_push(&r->headers_out.headers);
+
+    if (matched){
+        return NGX_OK;
     }
+
+    /* XXX we still need to create header slot even if the value
+     * is empty because some builtin headers like Last-Modified
+     * relies on this to get cleared */
+
+    h = ngx_list_push(&r->headers_out.headers);
     if (h == NULL) {
         return NGX_ERROR;
     }
-    h->key = *key;
-    h->value = *value;
-    if (value->len  == 0) {
+
+    if (value->len == 0) {
         h->hash = 0;
+
     } else {
         h->hash = 1;
     }
+
+    h->key = *key;
+    h->value = *value;
 
     h->lowcase_key = ngx_pnalloc(r->pool, h->key.len);
     if (h->lowcase_key == NULL) {
@@ -325,3 +371,4 @@ ngx_set_headers_out_by_search(ngx_http_request_t *r,
 
     return NGX_OK;
 }
+

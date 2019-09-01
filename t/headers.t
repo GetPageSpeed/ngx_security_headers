@@ -7,6 +7,7 @@ __DATA__
 === TEST 1: server is hidden
 --- config
     security_headers on;
+    hide_server_tokens on;
     location = /hello {
         return 200 "hello world\n";
     }
@@ -72,3 +73,27 @@ hello world
 !x-content-type-options
 x-frame-options: SAMEORIGIN
 !server
+
+
+
+=== TEST 5: simple failure
+--- config
+    hide_server_tokens on;
+    location = /hello {
+        security_headers on;
+
+        return 200 "hello world\n";
+    }
+    location = /hello-proxied {
+        proxy_buffering off;
+        proxy_pass http://127.0.0.1:$TEST_NGINX_SERVER_PORT/hello;
+    }
+--- request
+    GET /hello-proxied
+--- response_body
+hello world
+--- response_headers
+!x-content-type-options
+x-frame-options: SAMEORIGIN
+!Server
+Referrer-Policy: no-referrer-when-downgrade
