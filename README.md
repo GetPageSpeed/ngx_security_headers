@@ -99,7 +99,7 @@ Special `omit` value will disable sending the header by the module.
 
 - **syntax**: `security_headers_referrer_policy no-referrer | no-referrer-when-downgrade | same-origin | origin 
 | strict-origin | origin-when-cross-origin | strict-origin-when-cross-origin | unsafe-url | omit`
-- **default**: `no-referrer-when-downgrade`
+- **default**: `strict-origin-when-cross-origin`
 - **context**: `http`, `server`, `location`
 
 Controls inclusion and value of [`Referrer-Policy`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Referrer-Policy) header. 
