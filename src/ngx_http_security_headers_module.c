@@ -16,6 +16,17 @@
 #define NGX_HTTP_FO_HEADER_SAME        1
 #define NGX_HTTP_FO_HEADER_DENY        2
 
+/* The Referrer Policy header */
+#define NGX_HTTP_RP_HEADER_NO                        1
+#define NGX_HTTP_RP_HEADER_DOWNGRADE                 2
+#define NGX_HTTP_RP_HEADER_SAME_ORIGIN               3
+#define NGX_HTTP_RP_HEADER_ORIGIN                    4
+#define NGX_HTTP_RP_HEADER_STRICT_ORIGIN             5
+#define NGX_HTTP_RP_HEADER_ORIGIN_WHEN_CROSS         6
+#define NGX_HTTP_RP_HEADER_STRICT_ORIG_WHEN_CROSS    7
+#define NGX_HTTP_RP_HEADER_UNSAFE_URL                8
+
+
 
 typedef struct {
     ngx_flag_t                 enable;
@@ -23,6 +34,7 @@ typedef struct {
 
     ngx_uint_t                 xss;
     ngx_uint_t                 fo;
+    ngx_uint_t                 rp;
 
     ngx_hash_t                 nosniff_types;
     ngx_array_t                *types_keys;
@@ -41,6 +53,34 @@ static ngx_conf_enum_t  ngx_http_frame_options[] = {
     { ngx_string("sameorigin"),  NGX_HTTP_FO_HEADER_SAME },
     { ngx_string("deny"),        NGX_HTTP_FO_HEADER_DENY },
     { ngx_string("omit"),        NGX_HTTP_SECURITY_HEADER_OMIT },
+    { ngx_null_string, 0 }
+};
+
+static ngx_conf_enum_t  ngx_http_referrer_policy[] = {
+    { ngx_string("no-referrer"),
+      NGX_HTTP_RP_HEADER_NO },
+
+    { ngx_string("no-referrer-when-downgrade"),
+      NGX_HTTP_RP_HEADER_DOWNGRADE },
+
+    { ngx_string("same-origin"),
+      NGX_HTTP_RP_HEADER_SAME_ORIGIN },
+
+    { ngx_string("origin"),
+      NGX_HTTP_RP_HEADER_ORIGIN },
+
+    { ngx_string("strict-origin"),
+      NGX_HTTP_RP_HEADER_STRICT_ORIGIN },
+
+    { ngx_string("origin-when-cross-origin"),
+      NGX_HTTP_RP_HEADER_ORIGIN_WHEN_CROSS },
+
+    { ngx_string("unsafe-url"),
+      NGX_HTTP_RP_HEADER_UNSAFE_URL },
+
+    { ngx_string("omit"),
+      NGX_HTTP_SECURITY_HEADER_OMIT },
+
     { ngx_null_string, 0 }
 };
 
@@ -95,6 +135,13 @@ static ngx_command_t  ngx_http_security_headers_commands[] = {
       NGX_HTTP_LOC_CONF_OFFSET,
       offsetof(ngx_http_security_headers_loc_conf_t, fo),
       ngx_http_frame_options },
+
+    { ngx_string("security_headers_referrer_policy"),
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE1,
+      ngx_conf_set_enum_slot,
+      NGX_HTTP_LOC_CONF_OFFSET,
+      offsetof(ngx_http_security_headers_loc_conf_t, rp),
+      ngx_http_referrer_policy },
 
       ngx_null_command
 };
@@ -220,9 +267,27 @@ ngx_http_security_headers_filter(ngx_http_request_t *r)
     }
 
     /* Referrer-Policy: no-referrer-when-downgrade */
-    if (r->headers_out.status != NGX_HTTP_NOT_MODIFIED) {
-        ngx_str_set(&key, "Referrer-Policy");
-        ngx_str_set(&val, "no-referrer-when-downgrade");
+    if (r->headers_out.status != NGX_HTTP_NOT_MODIFIED
+        && NGX_HTTP_SECURITY_HEADER_OMIT != slcf->rp) {
+            ngx_str_set(&key, "Referrer-Policy");
+
+            if (NGX_HTTP_RP_HEADER_NO == slcf->rp) {
+                ngx_str_set(&val, "no-referrer");
+            } else if (NGX_HTTP_RP_HEADER_DOWNGRADE == slcf->rp) {
+                ngx_str_set(&val, "no-referrer-when-downgrade");
+            } else if (NGX_HTTP_RP_HEADER_SAME_ORIGIN == slcf->rp) {
+                ngx_str_set(&val, "same-origin");
+            } else if (NGX_HTTP_RP_HEADER_ORIGIN == slcf->rp) {
+                ngx_str_set(&val, "origin");
+            } else if (NGX_HTTP_RP_HEADER_STRICT_ORIGIN == slcf->rp) {
+                ngx_str_set(&val, "strict-origin");
+            } else if (NGX_HTTP_RP_HEADER_ORIGIN_WHEN_CROSS == slcf->rp) {
+                ngx_str_set(&val, "origin-when-cross-origin");
+            } else if (NGX_HTTP_RP_HEADER_STRICT_ORIG_WHEN_CROSS == slcf->rp) {
+                ngx_str_set(&val, "strict-origin-when-cross-origin");
+            } else if (NGX_HTTP_RP_HEADER_UNSAFE_URL == slcf->rp) {
+                ngx_str_set(&val, "unsafe-url");
+            }
         ngx_set_headers_out_by_search(r, &key, &val);
     }
 
@@ -245,6 +310,7 @@ ngx_http_security_headers_create_loc_conf(ngx_conf_t *cf)
 
     conf->xss =    NGX_CONF_UNSET_UINT;
     conf->fo  =    NGX_CONF_UNSET_UINT;
+    conf->rp  =    NGX_CONF_UNSET_UINT;
     conf->enable = NGX_CONF_UNSET;
     conf->hide_server_tokens = NGX_CONF_UNSET_UINT;
 
@@ -275,6 +341,8 @@ ngx_http_security_headers_merge_loc_conf(ngx_conf_t *cf, void *parent,
                               NGX_HTTP_XSS_HEADER_BLOCK);
     ngx_conf_merge_uint_value(conf->fo, prev->fo,
                               NGX_HTTP_FO_HEADER_SAME);
+    ngx_conf_merge_uint_value(conf->rp, prev->rp,
+                              NGX_HTTP_RP_HEADER_STRICT_ORIG_WHEN_CROSS);
 
     return NGX_CONF_OK;
 }

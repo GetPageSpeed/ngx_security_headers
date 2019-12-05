@@ -96,4 +96,48 @@ hello world
 !x-content-type-options
 x-frame-options: SAMEORIGIN
 !Server
-Referrer-Policy: no-referrer-when-downgrade
+Referrer-Policy: strict-origin-when-cross-origin
+
+
+
+=== TEST 6: custom referrer-policy
+--- config
+    security_headers on;
+    security_headers_referrer_policy unsafe-url;
+    location = /hello {
+        return 200 "hello world\n";
+    }
+--- request
+    GET /hello
+--- response_body
+hello world
+--- response_headers
+!x-content-type-options
+x-frame-options: SAMEORIGIN
+x-xss-protection: 1; mode=block
+referrer-policy: unsafe-url
+
+
+
+=== TEST 7: co-exist with add header for custom referrer-policy
+--- config
+    security_headers on;
+    security_headers_referrer_policy omit;
+
+    location = /hello {
+        return 200 "hello world\n";
+        add_header 'Referrer-Policy' 'origin';
+    }
+    location = /hello-proxied {
+        proxy_buffering off;
+        proxy_pass http://127.0.0.1:$TEST_NGINX_SERVER_PORT/hello;
+    }
+--- request
+    GET /hello-proxied
+--- response_body
+hello world
+--- response_headers
+!x-content-type-options
+x-frame-options: SAMEORIGIN
+x-xss-protection: 1; mode=block
+referrer-policy: origin

@@ -23,20 +23,14 @@ Accept-Ranges: bytes
 Connection: keep-alive
 X-Frame-Options: SAMEORIGIN  <-----------
 X-XSS-Protection: 1; mode=block <-----------
+Referrer-Policy: no-referrer-when-downgrade <-----------
 ```
 
-Running `curl -IL http://example.com/some.css` (or `some.js`) will yield additional headers:
+Running `curl -IL http://example.com/some.css` (or `some.js`) will yield *additional* security header:
 
 ```
 HTTP/1.1 200 OK
-Server: nginx
-Date: Tue, 21 May 2019 16:15:46 GMT
-Content-Type: text/css; charset=UTF-8
-Vary: Accept-Encoding
-Accept-Ranges: bytes
-Connection: keep-alive
-X-Frame-Options: SAMEORIGIN  <-----------
-X-XSS-Protection: 1; mode=block <-----------
+...
 X-Content-Type-Options: nosniff <-----------
 ```
 
@@ -62,6 +56,7 @@ Enables or disables applying security headers. The default set includes:
 
 * `X-Frame-Options: SAMEORIGIN`
 * `X-XSS-Protection: 1; mode=block`
+* `Referrer-Policy: strict-origin-when-cross-origin`
 * `X-Content-Type-Options: nosniff` (for CSS and Javascript)
 
 The values of these headers (or their inclusion) can be controlled with other `security_headers_*` directives below.
@@ -77,6 +72,9 @@ Enables hiding headers which leak software information:
 * `Server`
 * `X-Powered-By`
 
+Next are the common security headers being set. It's worth noting that special value of `omit` for directives below
+will disable sending a particular header by the module (useful if you want to let your backend app to send it). 
+
 ### `security_headers_xss`
 
 - **syntax**: `security_headers off | on | block | omit`
@@ -84,17 +82,28 @@ Enables hiding headers which leak software information:
 - **context**: `http`, `server`, `location`
 
 Controls `X-XSS-Protection` header. 
-Special `omit` value will disable sending the header. 
+Special `omit` value will disable sending the header by the module. 
 The `off` value is for disabling XSS protection: `X-XSS-Protection: 0`.
 
 ### `security_headers_frame`
 
-- **syntax**: `security_headers_frames sameorigin | deny | omit`
+- **syntax**: `security_headers_frame sameorigin | deny | omit`
 - **default**: `sameorigin`
 - **context**: `http`, `server`, `location`
 
 Controls inclusion and value of `X-Frame-Options` header. 
-Special `omit` value will disable sending the header. 
+Special `omit` value will disable sending the header by the module. 
+
+
+### `security_headers_referrer_policy`
+
+- **syntax**: `security_headers_referrer_policy no-referrer | no-referrer-when-downgrade | same-origin | origin 
+| strict-origin | origin-when-cross-origin | strict-origin-when-cross-origin | unsafe-url | omit`
+- **default**: `no-referrer-when-downgrade`
+- **context**: `http`, `server`, `location`
+
+Controls inclusion and value of [`Referrer-Policy`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Referrer-Policy) header. 
+Special `omit` value will disable sending the header by the module. 
 
 ### `security_headers_nosniff_types`
 
