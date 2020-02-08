@@ -115,12 +115,12 @@ Defines MIME types, for which `X-Content-Type-Options: nosniff` is sent.
 
 ## Install
 
-### CentOS 7
+### CentOS/RHEL 6, 7, 8
 
 It's easy to install the module in your stable nginx instance dynamically:
 
-    yum -y install https://extras.getpagespeed.com/release-el7-latest.rpm
-    yum -y install nginx-module-security-headers
+    sudo yum -y install https://extras.getpagespeed.com/release-latest.rpm
+    sudo yum install nginx-module-security-headers
 
 Then add it at the top of your `nginx.conf`:
 
