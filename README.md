@@ -71,6 +71,8 @@ Enables hiding headers which leak software information:
 
 * `Server`
 * `X-Powered-By`
+* `X-Page-Speed`
+* `X-Varnish`
 
 Next are the common security headers being set. It's worth noting that special value of `omit` for directives below
 will disable sending a particular header by the module (useful if you want to let your backend app to send it). 
