@@ -37,12 +37,12 @@ X-Content-Type-Options: nosniff <-----------
 
 ## Key Features
 
-* Plug-n-Play: the default set of security headers can be enabled with `security_headers on;` in your NGINX configuration
-* Sends `X-Content-Type-Options` only for appropriate MIME types, preserving unnecessary bits from being transferred for non-JS and non-CSS resources
-* Plays well with conditional `GET` requests: the security headers are not included there unnecessarily
-* Does not suffer the `add_header` directive's pitfalls
-* Hides `X-Powered-By`, which often leaks PHP version information
-* Hides `Server` header altogether, not just the version information
+*   Plug-n-Play: the default set of security headers can be enabled with `security_headers on;` in your NGINX configuration
+*   Sends `X-Content-Type-Options` only for appropriate MIME types, preserving unnecessary bits from being transferred for non-JS and non-CSS resources
+*   Plays well with conditional `GET` requests: the security headers are not included there unnecessarily
+*   Does not suffer the `add_header` directive's pitfalls
+*   Hides `X-Powered-By`, which often leaks PHP version information
+*   Hides `Server` header altogether, not just the version information
 
 ## Configuration directives
 
@@ -69,10 +69,10 @@ The values of these headers (or their inclusion) can be controlled with other `s
 
 Enables hiding headers which leak software information:
 
-* `Server`
-* `X-Powered-By`
-* `X-Page-Speed`
-* `X-Varnish`
+*   `Server`
+*   `X-Powered-By`
+*   `X-Page-Speed`
+*   `X-Varnish`
 
 Next are the common security headers being set. It's worth noting that special value of `omit` for directives below
 will disable sending a particular header by the module (useful if you want to let your backend app to send it). 

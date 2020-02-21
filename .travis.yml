@@ -5,7 +5,7 @@ compiler:
 env:
   matrix:
     - NGINX_VERSION=1.16.1
-    - NGINX_VERSION=1.17.3    -
+    - NGINX_VERSION=1.17.8
 addons:
   apt:
     packages:
