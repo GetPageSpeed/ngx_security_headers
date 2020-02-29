@@ -1,6 +1,6 @@
 # ngx_security_headers
 
-This NGINX module adds security headers and removes insecure headers easily. 
+This NGINX module adds security headers and removes insecure headers, *the right way* (c). 
 
 ## Synopsis
 
@@ -11,9 +11,9 @@ http {
 }
 ```
 
-Running `curl -IL http://example.com/` will yield additional headers:
+Running `curl -IL https://example.com/` will yield additional headers:
 
-```
+<pre>
 HTTP/1.1 200 OK
 Server: nginx
 Date: Tue, 21 May 2019 16:15:46 GMT
@@ -21,19 +21,23 @@ Content-Type: text/html; charset=UTF-8
 Vary: Accept-Encoding
 Accept-Ranges: bytes
 Connection: keep-alive
-X-Frame-Options: SAMEORIGIN  <-----------
-X-XSS-Protection: 1; mode=block <-----------
-Referrer-Policy: no-referrer-when-downgrade <-----------
-```
+<b>X-Frame-Options: SAMEORIGIN
+X-XSS-Protection: 1; mode=block
+Referrer-Policy: strict-origin-when-cross-origin
+Strict-Transport-Security: max-age=63072000; includeSubDomains; preload</b>
+</pre>
 
-Running `curl -IL http://example.com/some.css` (or `some.js`) will yield *additional* security header:
+Running `curl -IL https://example.com/some.css` (or `some.js`) will yield *additional* security header:
 
-```
+<pre>
 HTTP/1.1 200 OK
 ...
-X-Content-Type-Options: nosniff <-----------
-```
+<b>X-Content-Type-Options: nosniff</b>
+</pre>
 
+In general, the module features sending security HTTP headers in a way that better conforms to the standards.
+For instance, `Strict-Transport-Security` header should *not* be sent for plain HTTP requests.
+The module follows this recommendation.
 
 ## Key Features
 
@@ -132,27 +136,37 @@ Defines MIME types, for which `X-Content-Type-Options: nosniff` is sent.
 
 It's easy to install the module in your stable nginx instance dynamically:
 
-    sudo yum -y install https://extras.getpagespeed.com/release-latest.rpm
-    sudo yum install nginx-module-security-headers
+```bash
+sudo yum -y install https://extras.getpagespeed.com/release-latest.rpm
+sudo yum install nginx-module-security-headers
+```
 
 Then add it at the top of your `nginx.conf`:
 
-    load_module modules/ngx_http_security_headers_module.so;
+```
+load_module modules/ngx_http_security_headers_module.so;
+```
     
 In case you use ModSecurity NGINX module, make sure it's loaded last, like so:
 
-    load_module modules/ngx_http_security_headers_module.so;
-    load_module modules/ngx_http_modsecurity_module.so;
+```
+load_module modules/ngx_http_security_headers_module.so;
+load_module modules/ngx_http_modsecurity_module.so;
+```
 
 ### Other platforms
 
 To compile the module into NGINX, run:
 
-    ./configure --add-module=../ngx_security_headers
-    make 
-    make install
+```bash
+./configure --add-module=../ngx_security_headers
+make 
+make install
+```
 
 Or you can compile it as dynamic module. In that case, use `--add-dynamic-module` instead, and load the module after 
 compilation by adding to `nginx.conf`:
 
-    load_module /path/to/ngx_http_security_headers_module.so;
+```
+load_module /path/to/ngx_http_security_headers_module.so;
+```
