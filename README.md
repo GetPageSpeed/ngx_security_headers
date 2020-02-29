@@ -39,7 +39,7 @@ X-Content-Type-Options: nosniff <-----------
 
 *   Plug-n-Play: the default set of security headers can be enabled with `security_headers on;` in your NGINX configuration
 *   Sends `X-Content-Type-Options` only for relevant MIME types (CSS/JS), preserving unnecessary headers from being sent for HTML documents
-*   Similiarly, sends HTML-only relevant headers for relevant types and skips sending for others e.g. `X-Frame-Options` is useless for CSS
+*   Similarly, sends HTML-only security headers for relevant types only, not sending for others, e.g. `X-Frame-Options` is useless for CSS
 *   Plays well with conditional `GET` requests: the security headers are not included there unnecessarily
 *   Does not suffer the `add_header` directive's pitfalls
 *   Hides `X-Powered-By`, which often leaks PHP version information
