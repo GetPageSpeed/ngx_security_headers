@@ -23,6 +23,7 @@ hello world
 === TEST 2: no nosniff for html
 --- config
     security_headers on;
+    charset utf-8;
     location = /hello {
         return 200 "hello world\n";
     }
@@ -31,6 +32,7 @@ hello world
 --- response_body
 hello world
 --- response_headers
+content-type: text/plain; charset=utf-8
 !x-content-type-options
 x-frame-options: SAMEORIGIN
 x-xss-protection: 1; mode=block
@@ -141,3 +143,20 @@ hello world
 x-frame-options: SAMEORIGIN
 x-xss-protection: 1; mode=block
 referrer-policy: origin
+
+=== TEST 8: X-Frame-Options should not be sent for CSS (even when encoding specified)
+--- config
+    security_headers on;
+    charset utf-8;
+    charset_types text/css;
+    location = /hello.css {
+        default_type "text/css";
+        return 200 "hello world\n";
+    }
+--- request
+    GET /hello.css
+--- response_body
+hello world
+--- response_headers
+content-type: text/css; charset=utf-8
+!x-frame-options
