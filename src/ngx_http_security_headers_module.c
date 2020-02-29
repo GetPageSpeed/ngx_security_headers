@@ -37,7 +37,10 @@ typedef struct {
     ngx_uint_t                 rp;
 
     ngx_hash_t                 nosniff_types;
-    ngx_array_t                *types_keys;
+    ngx_array_t                *nosniff_types_keys;
+
+    ngx_hash_t                 text_types;
+    ngx_array_t                *text_types_keys;
 
 } ngx_http_security_headers_loc_conf_t;
 
@@ -99,6 +102,14 @@ ngx_str_t  ngx_http_security_headers_default_nosniff_types[] = {
     ngx_null_string
 };
 
+ngx_str_t  ngx_http_security_headers_default_text_types[] = {
+    ngx_string("text/html"),
+    ngx_string("application/xhtml+xml"),
+    ngx_string("text/xml"),
+    ngx_string("text/plain"),
+    ngx_null_string
+};
+
 static ngx_command_t  ngx_http_security_headers_commands[] = {
 
     { ngx_string( "security_headers" ),
@@ -119,7 +130,7 @@ static ngx_command_t  ngx_http_security_headers_commands[] = {
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_1MORE,
       ngx_http_types_slot,
       NGX_HTTP_LOC_CONF_OFFSET,
-      offsetof(ngx_http_security_headers_loc_conf_t, types_keys),
+      offsetof(ngx_http_security_headers_loc_conf_t, nosniff_types_keys),
       &ngx_http_security_headers_default_nosniff_types[0] },
 
     { ngx_string("security_headers_xss"),
@@ -142,6 +153,13 @@ static ngx_command_t  ngx_http_security_headers_commands[] = {
       NGX_HTTP_LOC_CONF_OFFSET,
       offsetof(ngx_http_security_headers_loc_conf_t, rp),
       ngx_http_referrer_policy },
+
+    { ngx_string("security_headers_text_types"),
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_1MORE,
+      ngx_http_types_slot,
+      NGX_HTTP_LOC_CONF_OFFSET,
+      offsetof(ngx_http_security_headers_loc_conf_t, text_types_keys),
+      &ngx_http_security_headers_default_text_types[0] },
 
       ngx_null_command
 };
@@ -242,7 +260,8 @@ ngx_http_security_headers_filter(ngx_http_request_t *r)
 
     /* Add X-XSS-Protection */
     if (r->headers_out.status != NGX_HTTP_NOT_MODIFIED
-        && NGX_HTTP_SECURITY_HEADER_OMIT != slcf->xss)
+        && NGX_HTTP_SECURITY_HEADER_OMIT != slcf->xss
+        && ngx_http_test_content_type(r, &slcf->text_types) != NULL)
     {
         ngx_str_set(&key, "X-XSS-Protection");
         if (NGX_HTTP_XSS_HEADER_ON == slcf->xss) {
@@ -265,7 +284,8 @@ ngx_http_security_headers_filter(ngx_http_request_t *r)
 
     /* Add X-Frame-Options */
     if (r->headers_out.status != NGX_HTTP_NOT_MODIFIED
-        && NGX_HTTP_SECURITY_HEADER_OMIT != slcf->fo)
+        && NGX_HTTP_SECURITY_HEADER_OMIT != slcf->fo
+        && ngx_http_test_content_type(r, &slcf->text_types) != NULL)
     {
         ngx_str_set(&key, "X-Frame-Options");
         if (NGX_HTTP_FO_HEADER_SAME == slcf->fo) {
@@ -339,9 +359,17 @@ ngx_http_security_headers_merge_loc_conf(ngx_conf_t *cf, void *parent,
     ngx_conf_merge_value(conf->hide_server_tokens,
                          prev->hide_server_tokens, 0 );
 
-    if (ngx_http_merge_types(cf, &conf->types_keys, &conf->nosniff_types,
-                             &prev->types_keys, &prev->nosniff_types,
+    if (ngx_http_merge_types(cf, &conf->nosniff_types_keys, &conf->nosniff_types,
+                             &prev->nosniff_types_keys, &prev->nosniff_types,
                              ngx_http_security_headers_default_nosniff_types)
+        != NGX_OK)
+    {
+        return NGX_CONF_ERROR;
+    }
+
+    if (ngx_http_merge_types(cf, &conf->text_types_keys, &conf->text_types,
+                             &prev->text_types_keys, &prev->text_types,
+                             ngx_http_security_headers_default_text_types)
         != NGX_OK)
     {
         return NGX_CONF_ERROR;

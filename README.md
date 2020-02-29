@@ -38,7 +38,8 @@ X-Content-Type-Options: nosniff <-----------
 ## Key Features
 
 *   Plug-n-Play: the default set of security headers can be enabled with `security_headers on;` in your NGINX configuration
-*   Sends `X-Content-Type-Options` only for appropriate MIME types, preserving unnecessary bits from being transferred for non-JS and non-CSS resources
+*   Sends `X-Content-Type-Options` only for relevant MIME types (CSS/JS), preserving unnecessary headers from being sent for HTML documents
+*   Similiarly, sends HTML-only relevant headers for relevant types and skips sending for others e.g. `X-Frame-Options` is useless for CSS
 *   Plays well with conditional `GET` requests: the security headers are not included there unnecessarily
 *   Does not suffer the `add_header` directive's pitfalls
 *   Hides `X-Powered-By`, which often leaks PHP version information
@@ -74,8 +75,18 @@ Enables hiding headers which leak software information:
 *   `X-Page-Speed`
 *   `X-Varnish`
 
-Next are the common security headers being set. It's worth noting that special value of `omit` for directives below
-will disable sending a particular header by the module (useful if you want to let your backend app to send it). 
+It's worth noting that some of those headers bear functional use, e.g. [`X-Page-Speed` docs](https://www.modpagespeed.com/doc/configuration#XHeaderValue) mention:
+
+> ... it is used to prevent infinite loops and unnecessary rewrites when PageSpeed 
+> fetches resources from an origin that also uses PageSpeed
+
+So it's best to specify `hide_server_tokens on;` in a front-facing NGINX insances, e.g.
+the one being accessed by actual browsers, and not the ones consumed by Varnish or other software.
+
+In most cases you will be just fine with `security_headers on;` and `hide_server_tokens on;`, without any adjustments.
+
+For fine-tuning, use the header-specific directives below. 
+A special value `omit` disables sending a particular header by the module (useful if you want to let your backend app to send it). 
 
 ### `security_headers_xss`
 
@@ -141,6 +152,7 @@ To compile the module into NGINX, run:
     make 
     make install
 
-Or you can compile it as dynamic module. In that case, use `--add-dynamic-module` instead, and load the module after compilation via:
+Or you can compile it as dynamic module. In that case, use `--add-dynamic-module` instead, and load the module after 
+compilation by adding to `nginx.conf`:
 
-    load_module modules/ngx_http_security_headers_module.so;
+    load_module /path/to/ngx_http_security_headers_module.so;
