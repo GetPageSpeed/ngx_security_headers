@@ -33,7 +33,7 @@ hello world
 hello world
 --- response_headers
 content-type: text/plain; charset=utf-8
-!x-content-type-options
+x-content-type-options: nosniff
 x-frame-options: SAMEORIGIN
 x-xss-protection: 1; mode=block
 
@@ -72,7 +72,7 @@ x-content-type-options: nosniff
 --- response_body
 hello world
 --- response_headers
-!x-content-type-options
+x-content-type-options: nosniff
 x-frame-options: SAMEORIGIN
 !server
 
@@ -95,7 +95,7 @@ x-frame-options: SAMEORIGIN
 --- response_body
 hello world
 --- response_headers
-!x-content-type-options
+x-content-type-options: nosniff
 x-frame-options: SAMEORIGIN
 !Server
 Referrer-Policy: strict-origin-when-cross-origin
@@ -114,7 +114,7 @@ Referrer-Policy: strict-origin-when-cross-origin
 --- response_body
 hello world
 --- response_headers
-!x-content-type-options
+x-content-type-options: nosniff
 x-frame-options: SAMEORIGIN
 x-xss-protection: 1; mode=block
 referrer-policy: unsafe-url
@@ -139,7 +139,7 @@ referrer-policy: unsafe-url
 --- response_body
 hello world
 --- response_headers
-!x-content-type-options
+x-content-type-options: nosniff
 x-frame-options: SAMEORIGIN
 x-xss-protection: 1; mode=block
 referrer-policy: origin

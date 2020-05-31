@@ -11,7 +11,7 @@ http {
 }
 ```
 
-Running `curl -IL https://example.com/` will yield additional headers:
+Running `curl -IL https://example.com/` will yield the added security headers:
 
 <pre>
 HTTP/1.1 200 OK
@@ -22,17 +22,10 @@ Vary: Accept-Encoding
 Accept-Ranges: bytes
 Connection: keep-alive
 <b>X-Frame-Options: SAMEORIGIN
+X-Content-Type-Options: nosniff
 X-XSS-Protection: 1; mode=block
 Referrer-Policy: strict-origin-when-cross-origin
 Strict-Transport-Security: max-age=63072000; includeSubDomains; preload</b>
-</pre>
-
-Running `curl -IL https://example.com/some.css` (or `some.js`) will yield *additional* security header:
-
-<pre>
-HTTP/1.1 200 OK
-...
-<b>X-Content-Type-Options: nosniff</b>
 </pre>
 
 In general, the module features sending security HTTP headers in a way that better conforms to the standards.
@@ -42,11 +35,10 @@ The module follows this recommendation.
 ## Key Features
 
 *   Plug-n-Play: the default set of security headers can be enabled with `security_headers on;` in your NGINX configuration
-*   Sends `X-Content-Type-Options` only for relevant MIME types (CSS/JS), preserving unnecessary headers from being sent for HTML documents
-*   Similarly, sends HTML-only security headers for relevant types only, not sending for others, e.g. `X-Frame-Options` is useless for CSS
+*   Sends HTML-only security headers for relevant types only, not sending for others, e.g. `X-Frame-Options` is useless for CSS
 *   Plays well with conditional `GET` requests: the security headers are not included there unnecessarily
 *   Does not suffer the `add_header` directive's pitfalls
-*   Hides `X-Powered-By`, which often leaks PHP version information
+*   Hides `X-Powered-By` and other headers which often leak software version information
 *   Hides `Server` header altogether, not just the version information
 
 ## Configuration directives
@@ -62,7 +54,7 @@ Enables or disables applying security headers. The default set includes:
 * `X-Frame-Options: SAMEORIGIN`
 * `X-XSS-Protection: 1; mode=block`
 * `Referrer-Policy: strict-origin-when-cross-origin`
-* `X-Content-Type-Options: nosniff` (for CSS and Javascript)
+* `X-Content-Type-Options: nosniff`
 
 The values of these headers (or their inclusion) can be controlled with other `security_headers_*` directives below.
 
@@ -84,7 +76,7 @@ It's worth noting that some of those headers bear functional use, e.g. [`X-Page-
 > ... it is used to prevent infinite loops and unnecessary rewrites when PageSpeed 
 > fetches resources from an origin that also uses PageSpeed
 
-So it's best to specify `hide_server_tokens on;` in a front-facing NGINX insances, e.g.
+So it's best to specify `hide_server_tokens on;` in a front-facing NGINX instances, e.g.
 the one being accessed by actual browsers, and not the ones consumed by Varnish or other software.
 
 In most cases you will be just fine with `security_headers on;` and `hide_server_tokens on;`, without any adjustments.
@@ -122,23 +114,15 @@ Special `omit` value will disable sending the header by the module.
 Controls inclusion and value of [`Referrer-Policy`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Referrer-Policy) header. 
 Special `omit` value will disable sending the header by the module. 
 
-### `security_headers_nosniff_types`
-
-- **syntax**: `security_headers_nosniff_types <mime_type> [..]`
-- **default**: `text/css text/javascript application/javascript`
-- **context**: `http`, `server`, `location`
-
-Defines MIME types, for which `X-Content-Type-Options: nosniff` is sent.
-
 ## Install
 
-### CentOS/RHEL 6, 7, 8
+### CentOS/RHEL 6, 7, 8 or Amazon Linux 2
 
-It's easy to install the module in your stable nginx instance dynamically:
+It's easy to install the module in your stable NGINX instance dynamically:
 
 ```bash
 sudo yum -y install https://extras.getpagespeed.com/release-latest.rpm
-sudo yum install nginx-module-security-headers
+sudo yum -y install nginx-module-security-headers
 ```
 
 Then add it at the top of your `nginx.conf`:

@@ -36,9 +36,6 @@ typedef struct {
     ngx_uint_t                 fo;
     ngx_uint_t                 rp;
 
-    ngx_hash_t                 nosniff_types;
-    ngx_array_t                *nosniff_types_keys;
-
     ngx_hash_t                 text_types;
     ngx_array_t                *text_types_keys;
 
@@ -95,13 +92,6 @@ static ngx_int_t ngx_http_security_headers_init(ngx_conf_t *cf);
 static ngx_int_t ngx_set_headers_out_by_search(ngx_http_request_t *r,
     ngx_str_t *key, ngx_str_t *value);
 
-ngx_str_t  ngx_http_security_headers_default_nosniff_types[] = {
-    ngx_string("text/css"),
-    ngx_string("text/javascript"),
-    ngx_string("application/javascript"),
-    ngx_null_string
-};
-
 ngx_str_t  ngx_http_security_headers_default_text_types[] = {
     ngx_string("text/html"),
     ngx_string("application/xhtml+xml"),
@@ -125,13 +115,6 @@ static ngx_command_t  ngx_http_security_headers_commands[] = {
       NGX_HTTP_LOC_CONF_OFFSET,
       offsetof(ngx_http_security_headers_loc_conf_t, hide_server_tokens ),
       NULL },
-
-    { ngx_string("security_headers_nosniff_types"),
-      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_1MORE,
-      ngx_http_types_slot,
-      NGX_HTTP_LOC_CONF_OFFSET,
-      offsetof(ngx_http_security_headers_loc_conf_t, nosniff_types_keys),
-      &ngx_http_security_headers_default_nosniff_types[0] },
 
     { ngx_string("security_headers_xss"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE1,
@@ -249,9 +232,7 @@ ngx_http_security_headers_filter(ngx_http_request_t *r)
     }
 
     /* add X-Content-Type-Options to output */
-    if (r->headers_out.status == NGX_HTTP_OK
-        && ngx_http_test_content_type(r, &slcf->nosniff_types) != NULL)
-    {
+    if (r->headers_out.status == NGX_HTTP_OK) {
         ngx_str_set(&key, "X-Content-Type-Options");
         ngx_str_set(&val, "nosniff");
 
@@ -275,7 +256,8 @@ ngx_http_security_headers_filter(ngx_http_request_t *r)
     }
 
 #if (NGX_HTTP_SSL)
-    if (r->connection->ssl) {
+    if (r->connection->ssl)
+    {
         ngx_str_set(&key, "Strict-Transport-Security");
         ngx_str_set(&val, "max-age=63072000; includeSubDomains; preload");
         ngx_set_headers_out_by_search(r, &key, &val);
@@ -358,14 +340,6 @@ ngx_http_security_headers_merge_loc_conf(ngx_conf_t *cf, void *parent,
     ngx_conf_merge_value( conf->enable, prev->enable, 0 );
     ngx_conf_merge_value(conf->hide_server_tokens,
                          prev->hide_server_tokens, 0 );
-
-    if (ngx_http_merge_types(cf, &conf->nosniff_types_keys, &conf->nosniff_types,
-                             &prev->nosniff_types_keys, &prev->nosniff_types,
-                             ngx_http_security_headers_default_nosniff_types)
-        != NGX_OK)
-    {
-        return NGX_CONF_ERROR;
-    }
 
     if (ngx_http_merge_types(cf, &conf->text_types_keys, &conf->text_types,
                              &prev->text_types_keys, &prev->text_types,
