@@ -4,7 +4,7 @@ This NGINX module adds security headers and removes insecure headers, *the right
 
 ## Synopsis
 
-```
+```nginx
 http {
     security_headers on;
     ...
@@ -127,13 +127,13 @@ sudo yum -y install nginx-module-security-headers
 
 Then add it at the top of your `nginx.conf`:
 
-```
+```nginx
 load_module modules/ngx_http_security_headers_module.so;
 ```
     
 In case you use ModSecurity NGINX module, make sure it's loaded last, like so:
 
-```
+```nginx
 load_module modules/ngx_http_security_headers_module.so;
 load_module modules/ngx_http_modsecurity_module.so;
 ```
@@ -151,6 +151,6 @@ make install
 Or you can compile it as dynamic module. In that case, use `--add-dynamic-module` instead, and load the module after 
 compilation by adding to `nginx.conf`:
 
-```
+```nginx
 load_module /path/to/ngx_http_security_headers_module.so;
 ```
