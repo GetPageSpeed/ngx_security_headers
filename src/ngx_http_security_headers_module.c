@@ -225,6 +225,11 @@ ngx_http_security_headers_filter(ngx_http_request_t *r)
         ngx_str_set(&key, "x-varnish");
         ngx_str_set(&val, "");
         ngx_set_headers_out_by_search(r, &key, &val);
+        
+        /* Hide X-Application-Version */
+        ngx_str_set(&key, "x-application-version");
+        ngx_str_set(&val, "");
+        ngx_set_headers_out_by_search(r, &key, &val);
     }
 
     if (1 != slcf->enable) {
