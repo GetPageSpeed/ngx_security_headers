@@ -225,7 +225,7 @@ ngx_http_security_headers_filter(ngx_http_request_t *r)
         ngx_str_set(&key, "x-varnish");
         ngx_str_set(&val, "");
         ngx_set_headers_out_by_search(r, &key, &val);
-        
+
         /* Hide X-Application-Version */
         ngx_str_set(&key, "x-application-version");
         ngx_str_set(&val, "");
@@ -261,7 +261,7 @@ ngx_http_security_headers_filter(ngx_http_request_t *r)
     }
 
 #if (NGX_HTTP_SSL)
-    if (r->connection->ssl)
+    if (r->schema.len == 5 && ngx_strncmp(r->schema.data, "https", 5) == 0)
     {
         ngx_str_set(&key, "Strict-Transport-Security");
         ngx_str_set(&val, "max-age=63072000; includeSubDomains; preload");
