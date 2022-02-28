@@ -143,7 +143,7 @@ load_module modules/ngx_http_modsecurity_module.so;
 To compile the module into NGINX, run:
 
 ```bash
-./configure --add-module=../ngx_security_headers
+./configure --with-compat --add-module=../ngx_security_headers
 make 
 make install
 ```
