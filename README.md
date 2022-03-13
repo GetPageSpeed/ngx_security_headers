@@ -2,6 +2,8 @@
 
 This NGINX module adds security headers and removes insecure headers, *the right way* (c). 
 
+[![Test Build](https://github.com/GetPageSpeed/ngx_security_headers/actions/workflows/build.yml/badge.svg?event=push)](https://github.com/GetPageSpeed/ngx_security_headers/actions/workflows/build.yml)
+
 ## Synopsis
 
 ```nginx
