@@ -31,10 +31,10 @@ jobs:
         run: |
           cd nginx && make -j$(nproc)
 
+      - name: Ensure Test::Nginx installed
+        run: |
+          cpanm --notest --local-lib=$HOME/perl5 Test::Nginx
+
       - name: Test the module
         run: |
-          PATH=$(pwd)/nginx/objs:$PATH cpanm --notest --local-lib=$HOME/perl5 Test::Nginx
-
-      - name: Test the module 2
-        run: |
-          PERL5LIB=$HOME/perl5/lib/perl5 TEST_NGINX_VERBOSE=true prove -v
+          PATH=$(pwd)/nginx/objs:$PATH PERL5LIB=$HOME/perl5/lib/perl5 TEST_NGINX_VERBOSE=true prove -v
