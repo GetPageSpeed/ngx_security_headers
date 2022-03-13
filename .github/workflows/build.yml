@@ -12,22 +12,29 @@ jobs:
         nginx-branch: [stable, mainline]
     steps:
       - uses: actions/checkout@v2
+
       - name: Install build and test dependencies
         run: |
           sudo apt-get --yes update
           sudo apt-get install --yes libpcre3-dev libssl-dev perl cpanminus
           sudo pip install lastversion
+
       - name: Download NGINX
         run: |
           mkdir nginx && cd nginx && lastversion unzip nginx:${{ matrix.nginx-branch }}
+
       - name: Configure NGINX to compile with the module statically
         run: |
           cd nginx && ./configure --with-debug --add-module=..
+
       - name: Make NGINX
         run: |
           cd nginx && make -j$(nproc)
+
       - name: Test the module
         run: |
           PATH=$(pwd)/nginx/objs:$PATH cpanm --notest --local-lib=$HOME/perl5 Test::Nginx
+
       - name: Test the module 2
+        run: |
           PERL5LIB=$HOME/perl5/lib/perl5 TEST_NGINX_VERBOSE=true prove -v
