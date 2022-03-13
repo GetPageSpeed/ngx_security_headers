@@ -32,6 +32,22 @@ In general, the module features sending security HTTP headers in a way that bett
 For instance, `Strict-Transport-Security` header should *not* be sent for plain HTTP requests.
 The module follows this recommendation.
 
+## Important note on `Strict-Transport-Security`
+
+The module adds several security headers, including `Strinct-Transport-Security`.
+Note that `preload` is sent in the value of this header, by default.
+This means Chrome may and will include your websites to its preload list of domains which are HTTPS only.
+
+It is *usually* what you want anyway, but bear in mind that in some edge cases you want to access
+a subdomain via plan unencrypted connection.
+
+If you absolutely sure that all your domains and subdomains used with the module will ever primarily operate
+on HTTPs, proceed without any extra step.
+
+If you are *not sure* if you have or will have a need to access your websites or any of its subdomains over
+plain insecure HTTP protocol, ensure `security_headers_hsts_preload off;` in your config before you ever
+start NGINX with the module to avoid having your domain preloaded by Chrome.
+
 ## Key Features
 
 *   Plug-n-Play: the default set of security headers can be enabled with `security_headers on;` in your NGINX configuration

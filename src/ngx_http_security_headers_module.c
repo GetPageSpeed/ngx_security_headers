@@ -31,6 +31,7 @@
 typedef struct {
     ngx_flag_t                 enable;
     ngx_flag_t                 hide_server_tokens;
+    ngx_flag_t                 hsts_preload;
 
     ngx_uint_t                 xss;
     ngx_uint_t                 fo;
@@ -114,6 +115,13 @@ static ngx_command_t  ngx_http_security_headers_commands[] = {
       ngx_conf_set_flag_slot,
       NGX_HTTP_LOC_CONF_OFFSET,
       offsetof(ngx_http_security_headers_loc_conf_t, hide_server_tokens ),
+      NULL },
+
+    { ngx_string( "security_headers_hsts_preload" ),
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_FLAG,
+      ngx_conf_set_flag_slot,
+      NGX_HTTP_LOC_CONF_OFFSET,
+      offsetof(ngx_http_security_headers_loc_conf_t, hsts_preload ),
       NULL },
 
     { ngx_string("security_headers_xss"),
@@ -264,7 +272,11 @@ ngx_http_security_headers_filter(ngx_http_request_t *r)
     if (r->schema.len == 5 && ngx_strncmp(r->schema.data, "https", 5) == 0)
     {
         ngx_str_set(&key, "Strict-Transport-Security");
-        ngx_str_set(&val, "max-age=63072000; includeSubDomains; preload");
+        if (1 == slcf->hsts_preload) {
+            ngx_str_set(&val, "max-age=63072000; includeSubDomains");
+        } else {
+            ngx_str_set(&val, "max-age=63072000; includeSubDomains; preload");
+        }
         ngx_set_headers_out_by_search(r, &key, &val);
     }
 #endif
@@ -330,6 +342,7 @@ ngx_http_security_headers_create_loc_conf(ngx_conf_t *cf)
     conf->rp  =    NGX_CONF_UNSET_UINT;
     conf->enable = NGX_CONF_UNSET;
     conf->hide_server_tokens = NGX_CONF_UNSET_UINT;
+    conf->hsts_preload = NGX_CONF_UNSET_UINT;
 
     return conf;
 }
@@ -342,9 +355,9 @@ ngx_http_security_headers_merge_loc_conf(ngx_conf_t *cf, void *parent,
     ngx_http_security_headers_loc_conf_t *prev = parent;
     ngx_http_security_headers_loc_conf_t *conf = child;
 
-    ngx_conf_merge_value( conf->enable, prev->enable, 0 );
-    ngx_conf_merge_value(conf->hide_server_tokens,
-                         prev->hide_server_tokens, 0 );
+    ngx_conf_merge_value(conf->enable, prev->enable, 0);
+    ngx_conf_merge_value(conf->hide_server_tokens, prev->hide_server_tokens, 0);
+    ngx_conf_merge_value(conf->hsts_preload, prev->hsts_preload, 1);
 
     if (ngx_http_merge_types(cf, &conf->text_types_keys, &conf->text_types,
                              &prev->text_types_keys, &prev->text_types,
