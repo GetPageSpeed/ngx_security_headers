@@ -104,7 +104,7 @@ A special value `omit` disables sending a particular header by the module (usefu
 
 ### `security_headers_xss`
 
-- **syntax**: `security_headers off | on | block | omit`
+- **syntax**: `security_headers_xss off | on | block | omit`
 - **default**: `block`
 - **context**: `http`, `server`, `location`
 
