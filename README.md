@@ -134,14 +134,22 @@ Special `omit` value will disable sending the header by the module.
 
 ## Install
 
-### CentOS/RHEL 6, 7, 8 or Amazon Linux 2
+We highly recommend installing using packages, where available,
+instead of compiling.
 
-It's easy to install the module in your stable NGINX instance dynamically:
+### CentOS/RHEL 6, 7, 8; Amazon Linux 2 and Fedora packages
+
+It's easy to install the module package for these operating systems.
+
+`ngx_security headers` is part of the NGINX Extras collection, so you can install
+it alongside [any modules](https://nginx-extras.getpagespeed.com/), 
+including PageSpeed and Brotli.
 
 ```bash
 sudo yum -y install https://extras.getpagespeed.com/release-latest.rpm
 sudo yum -y install nginx-module-security-headers
 ```
+
 
 Then add it at the top of your `nginx.conf`:
 
@@ -157,6 +165,9 @@ load_module modules/ngx_http_modsecurity_module.so;
 ```
 
 ### Other platforms
+
+Compiling NGINX modules is [prone to many problems](https://www.getpagespeed.com/server-setup/where-compilation-went-wrong), 
+including making your website insecure. Be sure to keep your NGINX and modules updated, if you go that route.
 
 To compile the module into NGINX, run:
 
