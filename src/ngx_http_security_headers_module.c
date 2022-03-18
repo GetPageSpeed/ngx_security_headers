@@ -272,9 +272,9 @@ ngx_http_security_headers_filter(ngx_http_request_t *r)
     {
         ngx_str_set(&key, "Strict-Transport-Security");
         if (1 == slcf->hsts_preload) {
-            ngx_str_set(&val, "max-age=63072000; includeSubDomains; preload");
+            ngx_str_set(&val, "max-age=31536000; includeSubDomains; preload");
         } else {
-            ngx_str_set(&val, "max-age=63072000; includeSubDomains");
+            ngx_str_set(&val, "max-age=31536000; includeSubDomains");
         }
         ngx_set_headers_out_by_search(r, &key, &val);
     }
