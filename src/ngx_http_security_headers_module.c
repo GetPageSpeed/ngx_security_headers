@@ -268,18 +268,16 @@ ngx_http_security_headers_filter(ngx_http_request_t *r)
         ngx_set_headers_out_by_search(r, &key, &val);
     }
 
-#if (NGX_HTTP_SSL)
     if (r->schema.len == 5 && ngx_strncmp(r->schema.data, "https", 5) == 0)
     {
         ngx_str_set(&key, "Strict-Transport-Security");
         if (1 == slcf->hsts_preload) {
-            ngx_str_set(&val, "max-age=63072000; includeSubDomains");
-        } else {
             ngx_str_set(&val, "max-age=63072000; includeSubDomains; preload");
+        } else {
+            ngx_str_set(&val, "max-age=63072000; includeSubDomains");
         }
         ngx_set_headers_out_by_search(r, &key, &val);
     }
-#endif
 
     /* Add X-Frame-Options */
     if (r->headers_out.status != NGX_HTTP_NOT_MODIFIED
