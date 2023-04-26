@@ -21,7 +21,14 @@ jobs:
 
       - name: Download NGINX
         run: |
-          mkdir nginx && cd nginx && lastversion unzip nginx:${{ matrix.nginx-branch }}
+          mkdir nginx && cd nginx
+          
+      - name: Download ${{ matrix.nginx-branch }} NGINX
+        uses: dvershinin/lastversion-action@main
+        with:
+          repository: 'nginx'
+          action: 'unzip'
+          branch: ${{ matrix.nginx-branch }}          
 
       - name: Configure NGINX to compile with the module statically
         run: |
