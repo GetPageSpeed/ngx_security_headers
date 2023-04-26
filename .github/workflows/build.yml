@@ -17,11 +17,9 @@ jobs:
         run: |
           sudo apt-get --yes update
           sudo apt-get install --yes libpcre3-dev libssl-dev perl cpanminus
-          sudo pip install lastversion
 
-      - name: Download NGINX
-        run: |
-          mkdir nginx && cd nginx
+      - name: Create NGINX download directory
+        run: mkdir nginx
           
       - name: Download ${{ matrix.nginx-branch }} NGINX
         uses: dvershinin/lastversion-action@main
