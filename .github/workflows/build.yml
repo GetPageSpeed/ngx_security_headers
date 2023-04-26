@@ -28,7 +28,8 @@ jobs:
         with:
           repository: 'nginx'
           action: 'unzip'
-          branch: ${{ matrix.nginx-branch }}          
+          branch: ${{ matrix.nginx-branch }}
+          working_directory: ./nginx
 
       - name: Configure NGINX to compile with the module statically
         run: |
