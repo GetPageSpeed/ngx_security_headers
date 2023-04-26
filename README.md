@@ -137,7 +137,7 @@ Special `omit` value will disable sending the header by the module.
 We highly recommend installing using packages, where available,
 instead of compiling.
 
-### CentOS/RHEL 6, 7, 8; Amazon Linux 2 and Fedora packages
+### CentOS/RHEL, Amazon Linux and Fedora packages
 
 It's easy to install the module package for these operating systems.
 
