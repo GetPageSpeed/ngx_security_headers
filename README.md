@@ -27,7 +27,7 @@ Connection: keep-alive
 X-Content-Type-Options: nosniff
 X-XSS-Protection: 0
 Referrer-Policy: strict-origin-when-cross-origin
-Strict-Transport-Security: max-age=63072000; includeSubDomains; preload</b>
+Strict-Transport-Security: max-age=31536000; includeSubDomains; preload</b>
 </pre>
 
 In general, the module features sending security HTTP headers in a way that better conforms to the standards.
