@@ -366,7 +366,7 @@ ngx_http_security_headers_merge_loc_conf(ngx_conf_t *cf, void *parent,
     }
 
     ngx_conf_merge_uint_value(conf->xss, prev->xss,
-                              NGX_HTTP_XSS_HEADER_BLOCK);
+                              NGX_HTTP_XSS_HEADER_OFF);
     ngx_conf_merge_uint_value(conf->fo, prev->fo,
                               NGX_HTTP_FO_HEADER_SAME);
     ngx_conf_merge_uint_value(conf->rp, prev->rp,
