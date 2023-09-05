@@ -1,6 +1,11 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [0.1.0] - 2023-09-06
+#### Fixed
+* HSTS set to 1 year instead of 2 years by default (#18)
+* New default `X-XSS-Protection: 0`, see #19
+
 ## [0.0.11] - 2022-03-18
 #### Fixed
 * Sending HSTS header no longer requires building with OpenSSL #12
