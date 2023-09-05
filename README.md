@@ -25,7 +25,7 @@ Accept-Ranges: bytes
 Connection: keep-alive
 <b>X-Frame-Options: SAMEORIGIN
 X-Content-Type-Options: nosniff
-X-XSS-Protection: 1; mode=block
+X-XSS-Protection: 0
 Referrer-Policy: strict-origin-when-cross-origin
 Strict-Transport-Security: max-age=63072000; includeSubDomains; preload</b>
 </pre>
@@ -70,7 +70,7 @@ start NGINX with the module to avoid having your domain preloaded by Chrome.
 Enables or disables applying security headers. The default set includes:
 
 * `X-Frame-Options: SAMEORIGIN`
-* `X-XSS-Protection: 1; mode=block`
+* `X-XSS-Protection: 0`
 * `Referrer-Policy: strict-origin-when-cross-origin`
 * `X-Content-Type-Options: nosniff`
 
@@ -105,12 +105,15 @@ A special value `omit` disables sending a particular header by the module (usefu
 ### `security_headers_xss`
 
 - **syntax**: `security_headers_xss off | on | block | omit`
-- **default**: `block`
+- **default**: `off`
 - **context**: `http`, `server`, `location`
 
 Controls `X-XSS-Protection` header. 
 Special `omit` value will disable sending the header by the module. 
 The `off` value is for disabling XSS protection: `X-XSS-Protection: 0`.
+This is the default because 
+[modern browsers do not support it](https://github.com/GetPageSpeed/ngx_security_headers/issues/19) and where it is 
+supported, it introduces vulnerabilities.
 
 ### `security_headers_frame`
 

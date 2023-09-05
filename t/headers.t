@@ -35,7 +35,7 @@ hello world
 content-type: text/plain; charset=utf-8
 x-content-type-options: nosniff
 x-frame-options: SAMEORIGIN
-x-xss-protection: 1; mode=block
+x-xss-protection: 0
 
 
 
@@ -116,7 +116,7 @@ hello world
 --- response_headers
 x-content-type-options: nosniff
 x-frame-options: SAMEORIGIN
-x-xss-protection: 1; mode=block
+x-xss-protection: 0
 referrer-policy: unsafe-url
 
 
@@ -141,7 +141,7 @@ hello world
 --- response_headers
 x-content-type-options: nosniff
 x-frame-options: SAMEORIGIN
-x-xss-protection: 1; mode=block
+x-xss-protection: 0
 referrer-policy: origin
 
 === TEST 8: X-Frame-Options should not be sent for CSS (even when encoding specified)
