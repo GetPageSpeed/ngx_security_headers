@@ -6,6 +6,7 @@
 #include <ngx_config.h>
 #include <ngx_core.h>
 #include <ngx_http.h>
+#include <ngx_string.h>
 
 #define NGX_HTTP_SECURITY_HEADER_OMIT  0
 
@@ -203,6 +204,10 @@ ngx_http_security_headers_filter(ngx_http_request_t *r)
     ngx_str_t   key;
     ngx_str_t   val;
 
+    ngx_str_t  scheme          = ngx_string("scheme");
+    ngx_uint_t scheme_hash_key = ngx_hash_key(scheme.data, scheme.len);
+    ngx_http_variable_value_t *scheme_value;
+
     slcf = ngx_http_get_module_loc_conf(r, ngx_http_security_headers_module);
 
     if (1 == slcf->hide_server_tokens) {
@@ -268,7 +273,8 @@ ngx_http_security_headers_filter(ngx_http_request_t *r)
         ngx_set_headers_out_by_search(r, &key, &val);
     }
 
-    if (r->schema.len == 5 && ngx_strncmp(r->schema.data, "https", 5) == 0)
+    scheme_value = ngx_http_get_variable(r, &scheme, scheme_hash_key);
+    if (scheme_value && !scheme_value->not_found && scheme_value->len == 5 && ngx_strncmp(scheme_value->data, "https", 5) == 0)
     {
         ngx_str_set(&key, "Strict-Transport-Security");
         if (1 == slcf->hsts_preload) {
