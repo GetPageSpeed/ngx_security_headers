@@ -83,6 +83,7 @@ x-frame-options: SAMEORIGIN
     hide_server_tokens on;
     location = /hello {
         security_headers on;
+        add_header via fakeengine;
 
         return 200 "hello world\n";
     }
@@ -98,6 +99,7 @@ hello world
 x-content-type-options: nosniff
 x-frame-options: SAMEORIGIN
 !Server
+!Via
 Referrer-Policy: strict-origin-when-cross-origin
 
 
