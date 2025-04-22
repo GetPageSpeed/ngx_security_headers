@@ -27,6 +27,11 @@
 #define NGX_HTTP_RP_HEADER_STRICT_ORIG_WHEN_CROSS    7
 #define NGX_HTTP_RP_HEADER_UNSAFE_URL                8
 
+/* ngx_hide_header macros */
+#define ngx_hide_header(r, name)               \
+    ngx_str_set(&key, name);                   \
+    ngx_str_set(&val, "");                     \
+    ngx_set_headers_out_by_search(r, &key, &val);
 
 
 typedef struct {
@@ -224,25 +229,30 @@ ngx_http_security_headers_filter(ngx_http_request_t *r)
         }
         h_server->hash = 0;
 
-        /* Hide X-Powered-By header */
-        ngx_str_set(&key, "x-powered-by");
-        ngx_str_set(&val, "");
-        ngx_set_headers_out_by_search(r, &key, &val);
-
-        /* Hide X-Page-Speed header */
-        ngx_str_set(&key, "x-page-speed");
-        ngx_str_set(&val, "");
-        ngx_set_headers_out_by_search(r, &key, &val);
-
-        /* Hide X-Varnish */
-        ngx_str_set(&key, "x-varnish");
-        ngx_str_set(&val, "");
-        ngx_set_headers_out_by_search(r, &key, &val);
-
-        /* Hide X-Application-Version */
-        ngx_str_set(&key, "x-application-version");
-        ngx_str_set(&val, "");
-        ngx_set_headers_out_by_search(r, &key, &val);
+        ngx_hide_header(r, "x-powered-by");
+        ngx_hide_header(r, "x-cf-powered-by");
+        ngx_hide_header(r, "via");
+        ngx_hide_header(r, "x-amz-cf-id");
+        ngx_hide_header(r, "x-amz-cf-pop");
+        ngx_hide_header(r, "x-page-speed");
+        ngx_hide_header(r, "x-varnish");
+        ngx_hide_header(r, "x-cache");
+        ngx_hide_header(r, "x-cache-hits");
+        ngx_hide_header(r, "x-cache-status");
+        ngx_hide_header(r, "x-application-version");
+        ngx_hide_header(r, "x-hudson");
+        ngx_hide_header(r, "x-hudson-theme");
+        ngx_hide_header(r, "x-instance-identity");
+        ngx_hide_header(r, "x-jenkins");
+        ngx_hide_header(r, "x-jenkins-session");
+        ngx_hide_header(r, "x-envoy-upstream-service-time");
+        ngx_hide_header(r, "x-drupal-cache");
+        ngx_hide_header(r, "x-generator");
+        ngx_hide_header(r, "x-backend-server");
+        ngx_hide_header(r, "x-wix-request-id");
+        ngx_hide_header(r, "x-request-id");
+        ngx_hide_header(r, "x-sucuri-id");
+        ngx_hide_header(r, "x-hacker");
     }
 
     if (1 != slcf->enable) {
