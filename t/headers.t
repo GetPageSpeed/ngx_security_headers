@@ -146,6 +146,8 @@ x-frame-options: SAMEORIGIN
 x-xss-protection: 0
 referrer-policy: origin
 
+
+
 === TEST 8: X-Frame-Options should not be sent for CSS (even when encoding specified)
 --- config
     security_headers on;
@@ -162,3 +164,64 @@ hello world
 --- response_headers
 content-type: text/css; charset=utf-8
 !x-frame-options
+
+
+
+=== TEST 9: hides common powered-by headers
+--- config
+    location = /hello {
+        security_headers on;
+
+        add_header X-Powered-By "PHP/8.2";
+        add_header X-Generator "WordPress 6.5";
+        add_header X-Jenkins "2.440";
+        add_header X-Something-Custom "Visible";
+        return 200 "hello world\n";
+    }
+--- request
+GET /hello
+--- response_body
+hello world
+--- response_headers
+!x-powered-by
+!x-generator
+!x-jenkins
+x-something-custom: Visible
+
+
+
+=== TEST 10: headers are visible when security_headers is off
+--- config
+    location = /hello {
+        # security_headers off (по умолчанию)
+        add_header X-Powered-By "PHP/8.2";
+        add_header X-Generator "WordPress";
+        return 200 "hello world\n";
+    }
+--- request
+GET /hello
+--- response_body
+hello world
+--- response_headers
+x-powered-by: PHP/8.2
+x-generator: WordPress
+
+
+
+=== TEST 11: only hide server header
+--- config
+    hide_server_tokens on;
+    location = /hello {
+        add_header Server "nginx";
+        add_header X-Powered-By "PHP";
+        add_header X-Generator "Drupal";
+        return 200 "hello world\n";
+    }
+--- request
+GET /hello
+--- response_body
+hello world
+--- response_headers
+!server
+x-powered-by: PHP
+x-generator: Drupal
