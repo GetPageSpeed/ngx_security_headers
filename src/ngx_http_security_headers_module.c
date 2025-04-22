@@ -27,13 +27,6 @@
 #define NGX_HTTP_RP_HEADER_STRICT_ORIG_WHEN_CROSS    7
 #define NGX_HTTP_RP_HEADER_UNSAFE_URL                8
 
-/* ngx_hide_header macros */
-#define ngx_hide_header(r, name)               \
-    ngx_str_set(&key, name);                   \
-    ngx_str_set(&val, "");                     \
-    ngx_set_headers_out_by_search(r, &key, &val);
-
-
 typedef struct {
     ngx_flag_t                 enable;
     ngx_flag_t                 hide_server_tokens;
@@ -47,6 +40,35 @@ typedef struct {
     ngx_array_t                *text_types_keys;
 
 } ngx_http_security_headers_loc_conf_t;
+
+static ngx_str_t empty_val = ngx_string("");
+
+static ngx_str_t hide_headers[] = {
+    ngx_string("x-powered-by"),
+    ngx_string("x-cf-powered-by"),
+    ngx_string("via"),
+    ngx_string("x-amz-cf-id"),
+    ngx_string("x-amz-cf-pop"),
+    ngx_string("x-page-speed"),
+    ngx_string("x-varnish"),
+    ngx_string("x-cache"),
+    ngx_string("x-cache-hits"),
+    ngx_string("x-cache-status"),
+    ngx_string("x-application-version"),
+    ngx_string("x-hudson"),
+    ngx_string("x-hudson-theme"),
+    ngx_string("x-instance-identity"),
+    ngx_string("x-jenkins"),
+    ngx_string("x-jenkins-session"),
+    ngx_string("x-envoy-upstream-service-time"),
+    ngx_string("x-drupal-cache"),
+    ngx_string("x-generator"),
+    ngx_string("x-backend-server"),
+    ngx_string("x-wix-request-id"),
+    ngx_string("x-request-id"),
+    ngx_string("x-sucuri-id"),
+    ngx_string("x-hacker")
+};
 
 static ngx_conf_enum_t  ngx_http_xss_protection[] = {
     { ngx_string("off"),    NGX_HTTP_XSS_HEADER_OFF },
@@ -229,30 +251,11 @@ ngx_http_security_headers_filter(ngx_http_request_t *r)
         }
         h_server->hash = 0;
 
-        ngx_hide_header(r, "x-powered-by");
-        ngx_hide_header(r, "x-cf-powered-by");
-        ngx_hide_header(r, "via");
-        ngx_hide_header(r, "x-amz-cf-id");
-        ngx_hide_header(r, "x-amz-cf-pop");
-        ngx_hide_header(r, "x-page-speed");
-        ngx_hide_header(r, "x-varnish");
-        ngx_hide_header(r, "x-cache");
-        ngx_hide_header(r, "x-cache-hits");
-        ngx_hide_header(r, "x-cache-status");
-        ngx_hide_header(r, "x-application-version");
-        ngx_hide_header(r, "x-hudson");
-        ngx_hide_header(r, "x-hudson-theme");
-        ngx_hide_header(r, "x-instance-identity");
-        ngx_hide_header(r, "x-jenkins");
-        ngx_hide_header(r, "x-jenkins-session");
-        ngx_hide_header(r, "x-envoy-upstream-service-time");
-        ngx_hide_header(r, "x-drupal-cache");
-        ngx_hide_header(r, "x-generator");
-        ngx_hide_header(r, "x-backend-server");
-        ngx_hide_header(r, "x-wix-request-id");
-        ngx_hide_header(r, "x-request-id");
-        ngx_hide_header(r, "x-sucuri-id");
-        ngx_hide_header(r, "x-hacker");
+        size_t hide_headers_count = sizeof(hide_headers) / sizeof(hide_headers[0]);
+
+        for (size_t i = 0; i < hide_headers_count; ++i) {
+            ngx_set_headers_out_by_search(r, &hide_headers[i], &empty_val);
+        }
     }
 
     if (1 != slcf->enable) {
