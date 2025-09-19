@@ -252,8 +252,8 @@ ngx_http_security_headers_filter(ngx_http_request_t *r)
         h_server->hash = 0;
 
         size_t hide_headers_count = sizeof(hide_headers) / sizeof(hide_headers[0]);
-
-        for (size_t i = 0; i < hide_headers_count; ++i) {
+        size_t i;
+        for (i = 0; i < hide_headers_count; ++i) {
             ngx_set_headers_out_by_search(r, &hide_headers[i], &empty_val);
         }
     }
