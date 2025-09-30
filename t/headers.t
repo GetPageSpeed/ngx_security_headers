@@ -225,3 +225,199 @@ hello world
 !server
 x-powered-by: PHP
 x-generator: Drupal
+
+
+
+=== TEST 12: COOP header with same-origin
+--- config
+    security_headers on;
+    security_headers_coop same-origin;
+    location = /hello {
+        return 200 "hello world\n";
+    }
+--- request
+    GET /hello
+--- response_body
+hello world
+--- response_headers
+cross-origin-opener-policy: same-origin
+
+
+
+=== TEST 13: COOP header with same-origin-allow-popups
+--- config
+    security_headers on;
+    security_headers_coop same-origin-allow-popups;
+    location = /hello {
+        return 200 "hello world\n";
+    }
+--- request
+    GET /hello
+--- response_body
+hello world
+--- response_headers
+cross-origin-opener-policy: same-origin-allow-popups
+
+
+
+=== TEST 14: COOP header with unsafe-none
+--- config
+    security_headers on;
+    security_headers_coop unsafe-none;
+    location = /hello {
+        return 200 "hello world\n";
+    }
+--- request
+    GET /hello
+--- response_body
+hello world
+--- response_headers
+cross-origin-opener-policy: unsafe-none
+
+
+
+=== TEST 15: COOP header omitted
+--- config
+    security_headers on;
+    security_headers_coop omit;
+    location = /hello {
+        return 200 "hello world\n";
+    }
+--- request
+    GET /hello
+--- response_body
+hello world
+--- response_headers
+!cross-origin-opener-policy
+
+
+
+=== TEST 16: CORP header with same-origin
+--- config
+    security_headers on;
+    security_headers_corp same-origin;
+    location = /hello {
+        return 200 "hello world\n";
+    }
+--- request
+    GET /hello
+--- response_body
+hello world
+--- response_headers
+cross-origin-resource-policy: same-origin
+
+
+
+=== TEST 17: CORP header with same-site
+--- config
+    security_headers on;
+    security_headers_corp same-site;
+    location = /hello {
+        return 200 "hello world\n";
+    }
+--- request
+    GET /hello
+--- response_body
+hello world
+--- response_headers
+cross-origin-resource-policy: same-site
+
+
+
+=== TEST 18: CORP header with cross-origin
+--- config
+    security_headers on;
+    security_headers_corp cross-origin;
+    location = /hello {
+        return 200 "hello world\n";
+    }
+--- request
+    GET /hello
+--- response_body
+hello world
+--- response_headers
+cross-origin-resource-policy: cross-origin
+
+
+
+=== TEST 19: CORP header omitted
+--- config
+    security_headers on;
+    security_headers_corp omit;
+    location = /hello {
+        return 200 "hello world\n";
+    }
+--- request
+    GET /hello
+--- response_body
+hello world
+--- response_headers
+!cross-origin-resource-policy
+
+
+
+=== TEST 20: COEP header with require-corp
+--- config
+    security_headers on;
+    security_headers_coep require-corp;
+    location = /hello {
+        return 200 "hello world\n";
+    }
+--- request
+    GET /hello
+--- response_body
+hello world
+--- response_headers
+cross-origin-embedder-policy: require-corp
+
+
+
+=== TEST 21: COEP header with unsafe-none
+--- config
+    security_headers on;
+    security_headers_coep unsafe-none;
+    location = /hello {
+        return 200 "hello world\n";
+    }
+--- request
+    GET /hello
+--- response_body
+hello world
+--- response_headers
+cross-origin-embedder-policy: unsafe-none
+
+
+
+=== TEST 22: COEP header omitted
+--- config
+    security_headers on;
+    security_headers_coep omit;
+    location = /hello {
+        return 200 "hello world\n";
+    }
+--- request
+    GET /hello
+--- response_body
+hello world
+--- response_headers
+!cross-origin-embedder-policy
+
+
+
+=== TEST 23: All cross-origin headers together
+--- config
+    security_headers on;
+    security_headers_coop same-origin;
+    security_headers_corp same-origin;
+    security_headers_coep require-corp;
+    location = /hello {
+        return 200 "hello world\n";
+    }
+--- request
+    GET /hello
+--- response_body
+hello world
+--- response_headers
+cross-origin-opener-policy: same-origin
+cross-origin-resource-policy: same-origin
+cross-origin-embedder-policy: require-corp

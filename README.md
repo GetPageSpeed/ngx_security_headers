@@ -135,6 +135,36 @@ Special `omit` value will disable sending the header by the module.
 Controls inclusion and value of [`Referrer-Policy`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Referrer-Policy) header. 
 Special `omit` value will disable sending the header by the module. 
 
+### `security_headers_coop`
+
+- **syntax**: `security_headers_coop unsafe-none | same-origin-allow-popups | same-origin | omit`
+- **default**: `omit`
+- **context**: `http`, `server`, `location`
+
+Controls inclusion and value of [`Cross-Origin-Opener-Policy`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cross-Origin-Opener-Policy) header.
+This header allows you to ensure a top-level document does not share a browsing context group with cross-origin documents.
+Special `omit` value (default) will disable sending the header by the module.
+
+### `security_headers_corp`
+
+- **syntax**: `security_headers_corp same-site | same-origin | cross-origin | omit`
+- **default**: `omit`
+- **context**: `http`, `server`, `location`
+
+Controls inclusion and value of [`Cross-Origin-Resource-Policy`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cross-Origin-Resource-Policy) header.
+This header conveys a desire that the browser blocks no-cors cross-origin/cross-site requests to the given resource.
+Special `omit` value (default) will disable sending the header by the module.
+
+### `security_headers_coep`
+
+- **syntax**: `security_headers_coep unsafe-none | require-corp | omit`
+- **default**: `omit`
+- **context**: `http`, `server`, `location`
+
+Controls inclusion and value of [`Cross-Origin-Embedder-Policy`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cross-Origin-Embedder-Policy) header.
+This header prevents a document from loading any cross-origin resources that don't explicitly grant the document permission.
+Special `omit` value (default) will disable sending the header by the module.
+
 ## Install
 
 We highly recommend installing using packages, where available,
