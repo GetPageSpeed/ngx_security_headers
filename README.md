@@ -140,6 +140,21 @@ Special `omit` value will disable sending the header by the module.
 We highly recommend installing using packages, where available,
 instead of compiling.
 
+### Ubuntu and Debian packages
+
+It's easy to install the module package for these operating systems.
+
+`ngx_security headers` is part of the APT NGINX Extras collection, so you can install
+it alongside [any modules](https://apt-nginx-extras.getpagespeed.com/modules/), 
+including Brotli.
+
+First, [set up the repository](https://apt-nginx-extras.getpagespeed.com/apt-setup/), then:
+
+```bash
+sudo apt-get update
+sudo apt-get install nginx-module-security-headers
+```
+
 ### CentOS/RHEL, Amazon Linux and Fedora packages
 
 It's easy to install the module package for these operating systems.
