@@ -225,3 +225,212 @@ hello world
 !server
 x-powered-by: PHP
 x-generator: Drupal
+
+
+
+=== TEST 12: CORP default is same-site when security_headers on
+--- config
+    security_headers on;
+    location = /hello {
+        return 200 "hello world\n";
+    }
+--- request
+    GET /hello
+--- response_body
+hello world
+--- response_headers
+Cross-Origin-Resource-Policy: same-site
+
+
+
+=== TEST 13: CORP same-origin
+--- config
+    security_headers on;
+    security_headers_corp same-origin;
+    location = /hello {
+        return 200 "hello world\n";
+    }
+--- request
+    GET /hello
+--- response_body
+hello world
+--- response_headers
+Cross-Origin-Resource-Policy: same-origin
+
+
+
+=== TEST 14: CORP cross-origin
+--- config
+    security_headers on;
+    security_headers_corp cross-origin;
+    location = /hello {
+        return 200 "hello world\n";
+    }
+--- request
+    GET /hello
+--- response_body
+hello world
+--- response_headers
+Cross-Origin-Resource-Policy: cross-origin
+
+
+
+=== TEST 15: CORP omit
+--- config
+    security_headers on;
+    security_headers_corp omit;
+    location = /hello {
+        return 200 "hello world\n";
+    }
+--- request
+    GET /hello
+--- response_body
+hello world
+--- response_headers
+!Cross-Origin-Resource-Policy
+
+
+
+=== TEST 16: COOP default is omit
+--- config
+    security_headers on;
+    location = /hello {
+        return 200 "hello world\n";
+    }
+--- request
+    GET /hello
+--- response_body
+hello world
+--- response_headers
+!Cross-Origin-Opener-Policy
+
+
+
+=== TEST 17: COOP same-origin
+--- config
+    security_headers on;
+    security_headers_coop same-origin;
+    location = /hello {
+        return 200 "hello world\n";
+    }
+--- request
+    GET /hello
+--- response_body
+hello world
+--- response_headers
+Cross-Origin-Opener-Policy: same-origin
+
+
+
+=== TEST 18: COOP same-origin-allow-popups
+--- config
+    security_headers on;
+    security_headers_coop same-origin-allow-popups;
+    location = /hello {
+        return 200 "hello world\n";
+    }
+--- request
+    GET /hello
+--- response_body
+hello world
+--- response_headers
+Cross-Origin-Opener-Policy: same-origin-allow-popups
+
+
+
+=== TEST 19: COOP unsafe-none
+--- config
+    security_headers on;
+    security_headers_coop unsafe-none;
+    location = /hello {
+        return 200 "hello world\n";
+    }
+--- request
+    GET /hello
+--- response_body
+hello world
+--- response_headers
+Cross-Origin-Opener-Policy: unsafe-none
+
+
+
+=== TEST 20: COEP default is omit
+--- config
+    security_headers on;
+    location = /hello {
+        return 200 "hello world\n";
+    }
+--- request
+    GET /hello
+--- response_body
+hello world
+--- response_headers
+!Cross-Origin-Embedder-Policy
+
+
+
+=== TEST 21: COEP require-corp
+--- config
+    security_headers on;
+    security_headers_coep require-corp;
+    location = /hello {
+        return 200 "hello world\n";
+    }
+--- request
+    GET /hello
+--- response_body
+hello world
+--- response_headers
+Cross-Origin-Embedder-Policy: require-corp
+
+
+
+=== TEST 22: COEP credentialless
+--- config
+    security_headers on;
+    security_headers_coep credentialless;
+    location = /hello {
+        return 200 "hello world\n";
+    }
+--- request
+    GET /hello
+--- response_body
+hello world
+--- response_headers
+Cross-Origin-Embedder-Policy: credentialless
+
+
+
+=== TEST 23: COEP unsafe-none
+--- config
+    security_headers on;
+    security_headers_coep unsafe-none;
+    location = /hello {
+        return 200 "hello world\n";
+    }
+--- request
+    GET /hello
+--- response_body
+hello world
+--- response_headers
+Cross-Origin-Embedder-Policy: unsafe-none
+
+
+
+=== TEST 24: Full cross-origin isolation
+--- config
+    security_headers on;
+    security_headers_corp same-origin;
+    security_headers_coop same-origin;
+    security_headers_coep require-corp;
+    location = /hello {
+        return 200 "hello world\n";
+    }
+--- request
+    GET /hello
+--- response_body
+hello world
+--- response_headers
+Cross-Origin-Resource-Policy: same-origin
+Cross-Origin-Opener-Policy: same-origin
+Cross-Origin-Embedder-Policy: require-corp

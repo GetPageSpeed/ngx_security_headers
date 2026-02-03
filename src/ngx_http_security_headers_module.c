@@ -27,6 +27,21 @@
 #define NGX_HTTP_RP_HEADER_STRICT_ORIG_WHEN_CROSS    7
 #define NGX_HTTP_RP_HEADER_UNSAFE_URL                8
 
+/* Cross-Origin-Resource-Policy */
+#define NGX_HTTP_CORP_HEADER_SAME_SITE      1
+#define NGX_HTTP_CORP_HEADER_SAME_ORIGIN    2
+#define NGX_HTTP_CORP_HEADER_CROSS_ORIGIN   3
+
+/* Cross-Origin-Opener-Policy */
+#define NGX_HTTP_COOP_HEADER_SAME_ORIGIN              1
+#define NGX_HTTP_COOP_HEADER_SAME_ORIGIN_ALLOW_POPUPS 2
+#define NGX_HTTP_COOP_HEADER_UNSAFE_NONE              3
+
+/* Cross-Origin-Embedder-Policy */
+#define NGX_HTTP_COEP_HEADER_REQUIRE_CORP    1
+#define NGX_HTTP_COEP_HEADER_CREDENTIALLESS  2
+#define NGX_HTTP_COEP_HEADER_UNSAFE_NONE     3
+
 typedef struct {
     ngx_flag_t                 enable;
     ngx_flag_t                 hide_server_tokens;
@@ -35,6 +50,9 @@ typedef struct {
     ngx_uint_t                 xss;
     ngx_uint_t                 fo;
     ngx_uint_t                 rp;
+    ngx_uint_t                 corp;
+    ngx_uint_t                 coop;
+    ngx_uint_t                 coep;
 
     ngx_hash_t                 text_types;
     ngx_array_t                *text_types_keys;
@@ -113,6 +131,30 @@ static ngx_conf_enum_t  ngx_http_referrer_policy[] = {
     { ngx_null_string, 0 }
 };
 
+static ngx_conf_enum_t  ngx_http_corp[] = {
+    { ngx_string("same-site"),    NGX_HTTP_CORP_HEADER_SAME_SITE },
+    { ngx_string("same-origin"),  NGX_HTTP_CORP_HEADER_SAME_ORIGIN },
+    { ngx_string("cross-origin"), NGX_HTTP_CORP_HEADER_CROSS_ORIGIN },
+    { ngx_string("omit"),         NGX_HTTP_SECURITY_HEADER_OMIT },
+    { ngx_null_string, 0 }
+};
+
+static ngx_conf_enum_t  ngx_http_coop[] = {
+    { ngx_string("same-origin"),              NGX_HTTP_COOP_HEADER_SAME_ORIGIN },
+    { ngx_string("same-origin-allow-popups"), NGX_HTTP_COOP_HEADER_SAME_ORIGIN_ALLOW_POPUPS },
+    { ngx_string("unsafe-none"),              NGX_HTTP_COOP_HEADER_UNSAFE_NONE },
+    { ngx_string("omit"),                     NGX_HTTP_SECURITY_HEADER_OMIT },
+    { ngx_null_string, 0 }
+};
+
+static ngx_conf_enum_t  ngx_http_coep[] = {
+    { ngx_string("require-corp"),   NGX_HTTP_COEP_HEADER_REQUIRE_CORP },
+    { ngx_string("credentialless"), NGX_HTTP_COEP_HEADER_CREDENTIALLESS },
+    { ngx_string("unsafe-none"),    NGX_HTTP_COEP_HEADER_UNSAFE_NONE },
+    { ngx_string("omit"),           NGX_HTTP_SECURITY_HEADER_OMIT },
+    { ngx_null_string, 0 }
+};
+
 static ngx_int_t ngx_http_security_headers_filter(ngx_http_request_t *r);
 static void *ngx_http_security_headers_create_loc_conf(ngx_conf_t *cf);
 static char *ngx_http_security_headers_merge_loc_conf(ngx_conf_t *cf,
@@ -179,6 +221,27 @@ static ngx_command_t  ngx_http_security_headers_commands[] = {
       NGX_HTTP_LOC_CONF_OFFSET,
       offsetof(ngx_http_security_headers_loc_conf_t, text_types_keys),
       &ngx_http_security_headers_default_text_types[0] },
+
+    { ngx_string("security_headers_corp"),
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE1,
+      ngx_conf_set_enum_slot,
+      NGX_HTTP_LOC_CONF_OFFSET,
+      offsetof(ngx_http_security_headers_loc_conf_t, corp),
+      ngx_http_corp },
+
+    { ngx_string("security_headers_coop"),
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE1,
+      ngx_conf_set_enum_slot,
+      NGX_HTTP_LOC_CONF_OFFSET,
+      offsetof(ngx_http_security_headers_loc_conf_t, coop),
+      ngx_http_coop },
+
+    { ngx_string("security_headers_coep"),
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE1,
+      ngx_conf_set_enum_slot,
+      NGX_HTTP_LOC_CONF_OFFSET,
+      offsetof(ngx_http_security_headers_loc_conf_t, coep),
+      ngx_http_coep },
 
       ngx_null_command
 };
@@ -372,7 +435,77 @@ ngx_http_security_headers_filter(ngx_http_request_t *r)
         }
     }
 
+    /* Cross-Origin-Resource-Policy */
+    if (r->headers_out.status != NGX_HTTP_NOT_MODIFIED
+        && NGX_HTTP_SECURITY_HEADER_OMIT != slcf->corp)
+    {
+        switch (slcf->corp) {
+            case NGX_HTTP_CORP_HEADER_SAME_SITE:
+                ngx_str_set(&val, "same-site");
+                break;
+            case NGX_HTTP_CORP_HEADER_SAME_ORIGIN:
+                ngx_str_set(&val, "same-origin");
+                break;
+            case NGX_HTTP_CORP_HEADER_CROSS_ORIGIN:
+                ngx_str_set(&val, "cross-origin");
+                break;
+            default:
+                val.len = 0;
+                val.data = NULL;
+        }
+        if (val.data) {
+            ngx_str_set(&key, "Cross-Origin-Resource-Policy");
+            ngx_set_headers_out_by_search(r, &key, &val);
+        }
+    }
 
+    /* Cross-Origin-Opener-Policy */
+    if (r->headers_out.status != NGX_HTTP_NOT_MODIFIED
+        && NGX_HTTP_SECURITY_HEADER_OMIT != slcf->coop)
+    {
+        switch (slcf->coop) {
+            case NGX_HTTP_COOP_HEADER_SAME_ORIGIN:
+                ngx_str_set(&val, "same-origin");
+                break;
+            case NGX_HTTP_COOP_HEADER_SAME_ORIGIN_ALLOW_POPUPS:
+                ngx_str_set(&val, "same-origin-allow-popups");
+                break;
+            case NGX_HTTP_COOP_HEADER_UNSAFE_NONE:
+                ngx_str_set(&val, "unsafe-none");
+                break;
+            default:
+                val.len = 0;
+                val.data = NULL;
+        }
+        if (val.data) {
+            ngx_str_set(&key, "Cross-Origin-Opener-Policy");
+            ngx_set_headers_out_by_search(r, &key, &val);
+        }
+    }
+
+    /* Cross-Origin-Embedder-Policy */
+    if (r->headers_out.status != NGX_HTTP_NOT_MODIFIED
+        && NGX_HTTP_SECURITY_HEADER_OMIT != slcf->coep)
+    {
+        switch (slcf->coep) {
+            case NGX_HTTP_COEP_HEADER_REQUIRE_CORP:
+                ngx_str_set(&val, "require-corp");
+                break;
+            case NGX_HTTP_COEP_HEADER_CREDENTIALLESS:
+                ngx_str_set(&val, "credentialless");
+                break;
+            case NGX_HTTP_COEP_HEADER_UNSAFE_NONE:
+                ngx_str_set(&val, "unsafe-none");
+                break;
+            default:
+                val.len = 0;
+                val.data = NULL;
+        }
+        if (val.data) {
+            ngx_str_set(&key, "Cross-Origin-Embedder-Policy");
+            ngx_set_headers_out_by_search(r, &key, &val);
+        }
+    }
 
     /* proceed to the next handler in chain */
     return ngx_http_next_header_filter(r);
@@ -392,6 +525,9 @@ ngx_http_security_headers_create_loc_conf(ngx_conf_t *cf)
     conf->xss =    NGX_CONF_UNSET_UINT;
     conf->fo  =    NGX_CONF_UNSET_UINT;
     conf->rp  =    NGX_CONF_UNSET_UINT;
+    conf->corp =   NGX_CONF_UNSET_UINT;
+    conf->coop =   NGX_CONF_UNSET_UINT;
+    conf->coep =   NGX_CONF_UNSET_UINT;
     conf->enable = NGX_CONF_UNSET;
     conf->hide_server_tokens = NGX_CONF_UNSET_UINT;
     conf->hsts_preload = NGX_CONF_UNSET_UINT;
@@ -425,6 +561,14 @@ ngx_http_security_headers_merge_loc_conf(ngx_conf_t *cf, void *parent,
                               NGX_HTTP_FO_HEADER_SAME);
     ngx_conf_merge_uint_value(conf->rp, prev->rp,
                               NGX_HTTP_RP_HEADER_STRICT_ORIG_WHEN_CROSS);
+
+    /* CORP defaults to same-site (opt-out), COOP/COEP default to omit (opt-in) */
+    ngx_conf_merge_uint_value(conf->corp, prev->corp,
+                              NGX_HTTP_CORP_HEADER_SAME_SITE);
+    ngx_conf_merge_uint_value(conf->coop, prev->coop,
+                              NGX_HTTP_SECURITY_HEADER_OMIT);
+    ngx_conf_merge_uint_value(conf->coep, prev->coep,
+                              NGX_HTTP_SECURITY_HEADER_OMIT);
 
     return NGX_CONF_OK;
 }
