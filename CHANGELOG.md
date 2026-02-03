@@ -1,6 +1,15 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [0.2.0] - 2026-02-03
+### Added
+* Cross-Origin-Resource-Policy (CORP) header support via `security_headers_corp` directive (default: `same-site`)
+* Cross-Origin-Opener-Policy (COOP) header support via `security_headers_coop` directive (default: `omit`)
+* Cross-Origin-Embedder-Policy (COEP) header support via `security_headers_coep` directive (default: `omit`)
+* COEP `credentialless` value for more flexible cross-origin isolation
+
+Fixes #17
+
 ## [0.1.0] - 2023-09-06
 #### Fixed
 * HSTS set to 1 year instead of 2 years by default (#18)

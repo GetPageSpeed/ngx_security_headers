@@ -27,6 +27,7 @@ Connection: keep-alive
 X-Content-Type-Options: nosniff
 X-XSS-Protection: 0
 Referrer-Policy: strict-origin-when-cross-origin
+Cross-Origin-Resource-Policy: same-site
 Strict-Transport-Security: max-age=31536000; includeSubDomains; preload</b>
 </pre>
 
@@ -73,6 +74,7 @@ Enables or disables applying security headers. The default set includes:
 * `X-XSS-Protection: 0`
 * `Referrer-Policy: strict-origin-when-cross-origin`
 * `X-Content-Type-Options: nosniff`
+* `Cross-Origin-Resource-Policy: same-site`
 
 The values of these headers (or their inclusion) can be controlled with other `security_headers_*` directives below.
 
@@ -132,8 +134,60 @@ Special `omit` value will disable sending the header by the module.
 - **default**: `strict-origin-when-cross-origin`
 - **context**: `http`, `server`, `location`
 
-Controls inclusion and value of [`Referrer-Policy`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Referrer-Policy) header. 
-Special `omit` value will disable sending the header by the module. 
+Controls inclusion and value of [`Referrer-Policy`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Referrer-Policy) header.
+Special `omit` value will disable sending the header by the module.
+
+### `security_headers_corp`
+
+- **syntax**: `security_headers_corp same-site | same-origin | cross-origin | omit`
+- **default**: `same-site`
+- **context**: `http`, `server`, `location`
+
+Controls inclusion and value of [`Cross-Origin-Resource-Policy`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cross-Origin-Resource-Policy) header.
+This header controls how your resources can be embedded by other origins.
+Special `omit` value will disable sending the header by the module.
+
+The default `same-site` is a safe choice that prevents cross-site embedding while allowing same-site requests.
+
+### `security_headers_coop`
+
+- **syntax**: `security_headers_coop same-origin | same-origin-allow-popups | unsafe-none | omit`
+- **default**: `omit`
+- **context**: `http`, `server`, `location`
+
+Controls inclusion and value of [`Cross-Origin-Opener-Policy`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cross-Origin-Opener-Policy) header.
+This header controls window opener relationships across origins.
+Special `omit` value will disable sending the header by the module.
+
+The default is `omit` because enabling this header can break popup/window.opener communication patterns.
+Enable explicitly only if you understand the implications.
+
+### `security_headers_coep`
+
+- **syntax**: `security_headers_coep require-corp | credentialless | unsafe-none | omit`
+- **default**: `omit`
+- **context**: `http`, `server`, `location`
+
+Controls inclusion and value of [`Cross-Origin-Embedder-Policy`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cross-Origin-Embedder-Policy) header.
+This header controls embedding of cross-origin resources.
+Special `omit` value will disable sending the header by the module.
+
+The default is `omit` because enabling this header can break sites that load third-party resources
+(analytics, CDN assets, ads) without proper CORS headers.
+
+### Cross-Origin Isolation
+
+To enable [cross-origin isolation](https://web.dev/cross-origin-isolation-guide/) (required for `SharedArrayBuffer` and high-resolution timers),
+configure all three cross-origin headers:
+
+```nginx
+security_headers on;
+security_headers_corp same-origin;
+security_headers_coop same-origin;
+security_headers_coep require-corp;
+```
+
+**Warning**: This configuration will break loading of any cross-origin resources that don't explicitly allow it via CORS.
 
 ## Install
 
