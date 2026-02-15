@@ -20,7 +20,7 @@ hello world
 
 
 
-=== TEST 2: no nosniff for html
+=== TEST 2: basic security headers (default xss is unset)
 --- config
     security_headers on;
     charset utf-8;
@@ -35,7 +35,7 @@ hello world
 content-type: text/plain; charset=utf-8
 x-content-type-options: nosniff
 x-frame-options: SAMEORIGIN
-x-xss-protection: 0
+!x-xss-protection
 
 
 
@@ -118,7 +118,7 @@ hello world
 --- response_headers
 x-content-type-options: nosniff
 x-frame-options: SAMEORIGIN
-x-xss-protection: 0
+!x-xss-protection
 referrer-policy: unsafe-url
 
 
@@ -143,7 +143,7 @@ hello world
 --- response_headers
 x-content-type-options: nosniff
 x-frame-options: SAMEORIGIN
-x-xss-protection: 0
+!x-xss-protection
 referrer-policy: origin
 
 
@@ -434,3 +434,61 @@ hello world
 Cross-Origin-Resource-Policy: same-origin
 Cross-Origin-Opener-Policy: same-origin
 Cross-Origin-Embedder-Policy: require-corp
+
+
+
+=== TEST 25: XSS unset removes header from upstream
+--- config
+    location = /hello {
+        add_header X-XSS-Protection "1; mode=block";
+        return 200 "hello world\n";
+    }
+    location = /hello-proxied {
+        security_headers on;
+        security_headers_xss unset;
+        proxy_buffering off;
+        proxy_pass http://127.0.0.1:$TEST_NGINX_SERVER_PORT/hello;
+    }
+--- request
+    GET /hello-proxied
+--- response_body
+hello world
+--- response_headers
+!x-xss-protection
+
+
+
+=== TEST 26: XSS omit allows upstream header through
+--- config
+    location = /hello {
+        add_header X-XSS-Protection "1; mode=block";
+        return 200 "hello world\n";
+    }
+    location = /hello-proxied {
+        security_headers on;
+        security_headers_xss omit;
+        proxy_buffering off;
+        proxy_pass http://127.0.0.1:$TEST_NGINX_SERVER_PORT/hello;
+    }
+--- request
+    GET /hello-proxied
+--- response_body
+hello world
+--- response_headers
+x-xss-protection: 1; mode=block
+
+
+
+=== TEST 27: XSS off still sends header value 0
+--- config
+    security_headers on;
+    security_headers_xss off;
+    location = /hello {
+        return 200 "hello world\n";
+    }
+--- request
+    GET /hello
+--- response_body
+hello world
+--- response_headers
+x-xss-protection: 0

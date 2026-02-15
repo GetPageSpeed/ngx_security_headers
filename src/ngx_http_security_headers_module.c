@@ -13,6 +13,7 @@
 #define NGX_HTTP_XSS_HEADER_OFF        1
 #define NGX_HTTP_XSS_HEADER_ON         2
 #define NGX_HTTP_XSS_HEADER_BLOCK      3
+#define NGX_HTTP_XSS_HEADER_UNSET      4  /* actively remove header */
 
 #define NGX_HTTP_FO_HEADER_SAME        1
 #define NGX_HTTP_FO_HEADER_DENY        2
@@ -93,6 +94,7 @@ static ngx_conf_enum_t  ngx_http_xss_protection[] = {
     { ngx_string("on"),     NGX_HTTP_XSS_HEADER_ON },
     { ngx_string("block"),  NGX_HTTP_XSS_HEADER_BLOCK },
     { ngx_string("omit"),   NGX_HTTP_SECURITY_HEADER_OMIT },
+    { ngx_string("unset"),  NGX_HTTP_XSS_HEADER_UNSET },
     { ngx_null_string, 0 }
 };
 
@@ -333,30 +335,34 @@ ngx_http_security_headers_filter(ngx_http_request_t *r)
         ngx_set_headers_out_by_search(r, &key, &val);
     }
 
-    /* Add X-XSS-Protection */
+    /* Handle X-XSS-Protection (deprecated header) */
     if (r->headers_out.status != NGX_HTTP_NOT_MODIFIED
-        && NGX_HTTP_SECURITY_HEADER_OMIT != slcf->xss
-        && ngx_http_test_content_type(r, &slcf->text_types) != NULL)
+        && NGX_HTTP_SECURITY_HEADER_OMIT != slcf->xss)
     {
+        ngx_str_set(&key, "X-XSS-Protection");
 
-        switch (slcf->xss) {
-            case NGX_HTTP_XSS_HEADER_ON:
-                ngx_str_set(&val, "1");
-                break;
-            case NGX_HTTP_XSS_HEADER_BLOCK:
-                ngx_str_set(&val, "1; mode=block");
-                break;
-            case NGX_HTTP_XSS_HEADER_OFF:
-                ngx_str_set(&val, "0");
-                break;
-            default:
-                val.len = 0;
-                val.data = NULL;
-        }
+        if (slcf->xss == NGX_HTTP_XSS_HEADER_UNSET) {
+            /* Actively remove the deprecated X-XSS-Protection header */
+            ngx_set_headers_out_by_search(r, &key, &empty_val);
+        } else if (ngx_http_test_content_type(r, &slcf->text_types) != NULL) {
+            switch (slcf->xss) {
+                case NGX_HTTP_XSS_HEADER_ON:
+                    ngx_str_set(&val, "1");
+                    break;
+                case NGX_HTTP_XSS_HEADER_BLOCK:
+                    ngx_str_set(&val, "1; mode=block");
+                    break;
+                case NGX_HTTP_XSS_HEADER_OFF:
+                    ngx_str_set(&val, "0");
+                    break;
+                default:
+                    val.len = 0;
+                    val.data = NULL;
+            }
 
-        if (val.data) {
-            ngx_str_set(&key, "X-XSS-Protection");
-            ngx_set_headers_out_by_search(r, &key, &val);
+            if (val.data) {
+                ngx_set_headers_out_by_search(r, &key, &val);
+            }
         }
     }
 
@@ -556,7 +562,7 @@ ngx_http_security_headers_merge_loc_conf(ngx_conf_t *cf, void *parent,
     }
 
     ngx_conf_merge_uint_value(conf->xss, prev->xss,
-                              NGX_HTTP_XSS_HEADER_OFF);
+                              NGX_HTTP_XSS_HEADER_UNSET);
     ngx_conf_merge_uint_value(conf->fo, prev->fo,
                               NGX_HTTP_FO_HEADER_SAME);
     ngx_conf_merge_uint_value(conf->rp, prev->rp,
