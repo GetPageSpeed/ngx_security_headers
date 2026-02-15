@@ -25,7 +25,6 @@ Accept-Ranges: bytes
 Connection: keep-alive
 <b>X-Frame-Options: SAMEORIGIN
 X-Content-Type-Options: nosniff
-X-XSS-Protection: 0
 Referrer-Policy: strict-origin-when-cross-origin
 Cross-Origin-Resource-Policy: same-site
 Strict-Transport-Security: max-age=31536000; includeSubDomains; preload</b>
@@ -71,10 +70,11 @@ start NGINX with the module to avoid having your domain preloaded by Chrome.
 Enables or disables applying security headers. The default set includes:
 
 * `X-Frame-Options: SAMEORIGIN`
-* `X-XSS-Protection: 0`
 * `Referrer-Policy: strict-origin-when-cross-origin`
 * `X-Content-Type-Options: nosniff`
 * `Cross-Origin-Resource-Policy: same-site`
+
+The deprecated `X-XSS-Protection` header is actively removed by default.
 
 The values of these headers (or their inclusion) can be controlled with other `security_headers_*` directives below.
 
@@ -106,16 +106,17 @@ A special value `omit` disables sending a particular header by the module (usefu
 
 ### `security_headers_xss`
 
-- **syntax**: `security_headers_xss off | on | block | omit`
-- **default**: `off`
+- **syntax**: `security_headers_xss off | on | block | omit | unset`
+- **default**: `unset`
 - **context**: `http`, `server`, `location`
 
-Controls `X-XSS-Protection` header. 
-Special `omit` value will disable sending the header by the module. 
-The `off` value is for disabling XSS protection: `X-XSS-Protection: 0`.
-This is the default because 
-[modern browsers do not support it](https://github.com/GetPageSpeed/ngx_security_headers/issues/19) and where it is 
-supported, it introduces vulnerabilities.
+Controls `X-XSS-Protection` header.
+
+* `unset` (default): Actively removes the header from responses, including any set by upstream servers. This is the recommended setting because the header is deprecated and [introduces XSS vulnerabilities](https://github.com/nicosalm/security-lab-xss-filter) in browsers that support it.
+* `omit`: Does not add or remove the header; allows upstream headers through unchanged.
+* `off`: Sends `X-XSS-Protection: 0` to explicitly disable browser XSS filtering.
+* `on`: Sends `X-XSS-Protection: 1`.
+* `block`: Sends `X-XSS-Protection: 1; mode=block`.
 
 ### `security_headers_frame`
 
