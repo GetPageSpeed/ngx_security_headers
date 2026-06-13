@@ -1,0 +1,6 @@
+name: "CodeQL config for ngx_http_security_headers_module"
+
+# CodeQL builds the whole nginx tree to analyze our module, but we only care
+# about findings in code we own. Restrict reported paths to the module sources.
+paths:
+  - "src/"

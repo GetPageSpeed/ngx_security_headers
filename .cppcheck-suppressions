@@ -1,0 +1,16 @@
+// cppcheck suppressions for ngx_http_security_headers_module.
+// Keep this list tight: suppress noise, never a real bug. If cppcheck flags a
+// genuine issue, fix the code rather than adding a line here.
+
+// nginx headers are pulled in via -I system paths; we don't want cppcheck
+// reporting on or descending into them.
+missingIncludeSystem
+
+// Module entry points (handlers, directive setters, init/exit callbacks) are
+// referenced only through nginx's static command/module tables, so cppcheck
+// cannot see the call sites and reports them as unused.
+unusedFunction
+
+// Avoid failing the build when a suppression above stops matching after a
+// refactor; surfaced as information, reviewed when tuning this file.
+unmatchedSuppression
