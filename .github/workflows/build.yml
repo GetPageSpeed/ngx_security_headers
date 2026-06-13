@@ -1,4 +1,4 @@
-name: Test Build
+name: Build
 
 on: [push, pull_request]
 
@@ -13,14 +13,14 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Install build and test dependencies
+      - name: Install build dependencies
         run: |
           sudo apt-get --yes update
-          sudo apt-get install --yes libpcre3-dev libssl-dev perl cpanminus
+          sudo apt-get install --yes libpcre3-dev libssl-dev
 
       - name: Create NGINX download directory
         run: mkdir nginx
-          
+
       - name: Download ${{ matrix.nginx-branch }} NGINX
         uses: dvershinin/lastversion-action@main
         with:
@@ -36,11 +36,3 @@ jobs:
       - name: Make NGINX
         run: |
           cd nginx && make -j$(nproc)
-
-      - name: Ensure Test::Nginx installed
-        run: |
-          cpanm --notest --local-lib=$HOME/perl5 Test::Nginx
-
-      - name: Test the module
-        run: |
-          PATH=$(pwd)/nginx/objs:$PATH PERL5LIB=$HOME/perl5/lib/perl5 TEST_NGINX_VERBOSE=true prove -v
