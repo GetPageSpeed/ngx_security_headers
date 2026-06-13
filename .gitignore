@@ -1,5 +1,12 @@
 /nbproject
-/t/servroot
 CLAUDE.md
 .cursor/
 test-error.log
+
+# Private TDD harness + test suite — kept out of the public repo on purpose.
+# Track these in a private companion location instead.
+/Dockerfile.tests-base
+/Makefile
+/docker-compose.test.yml
+/docker-run-tests.sh
+/t
