@@ -1,0 +1,77 @@
+name: Static Analysis
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  cppcheck:
+    runs-on: ubuntu-latest
+    env:
+      NGINX_VERSION: release-1.27.2
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install cppcheck and nginx build deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cppcheck \
+            build-essential libpcre3-dev libssl-dev zlib1g-dev git
+
+      - name: Fetch nginx headers
+        run: |
+          git clone --depth 1 --branch "${NGINX_VERSION}" \
+            https://github.com/nginx/nginx.git /tmp/nginx-src
+          cd /tmp/nginx-src
+          ./auto/configure --with-debug --with-compat
+
+      - name: Run cppcheck
+        run: |
+          cppcheck --enable=warning,portability,performance \
+            --check-level=exhaustive \
+            --error-exitcode=1 \
+            --suppressions-list=.cppcheck-suppressions \
+            --suppress=missingIncludeSystem \
+            --std=c11 \
+            -I /tmp/nginx-src/src/core -I /tmp/nginx-src/src/event \
+            -I /tmp/nginx-src/src/http -I /tmp/nginx-src/src/http/modules \
+            -I /tmp/nginx-src/src/os/unix -I /tmp/nginx-src/objs \
+            src/ngx_http_security_headers_module.c
+
+  codeql:
+    runs-on: ubuntu-latest
+    # Public repo: real upload to the Security tab; permissions: security-events
+    # needs write.
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    env:
+      NGINX_VERSION: release-1.27.2
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: c-cpp
+          config-file: ./.github/codeql/codeql-config.yml
+
+      - name: Build nginx with the module (static)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential \
+            libpcre3-dev libssl-dev zlib1g-dev git
+          git clone --depth 1 --branch "${NGINX_VERSION}" \
+            https://github.com/nginx/nginx.git /tmp/nginx-src
+          cd /tmp/nginx-src
+          ./auto/configure --with-compat \
+            --add-module="${GITHUB_WORKSPACE}"
+          make -j"$(nproc)"
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
