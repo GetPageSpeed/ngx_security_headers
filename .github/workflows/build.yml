@@ -44,3 +44,52 @@ jobs:
       - name: Test the module
         run: |
           PATH=$(pwd)/nginx/objs:$PATH PERL5LIB=$HOME/perl5/lib/perl5 TEST_NGINX_VERBOSE=true prove -v
+
+  test-asan:
+    runs-on: ubuntu-latest
+    env:
+      NGINX_VERSION: release-1.27.2
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install build and test dependencies
+        run: |
+          sudo apt-get --yes update
+          sudo apt-get install --yes libpcre3-dev libssl-dev zlib1g-dev perl cpanminus git
+
+      - name: Install Test::Nginx
+        run: |
+          cpanm --notest --local-lib=$HOME/perl5 Test::Nginx Test::Nginx::Socket
+
+      - name: Build nginx with the module statically under AddressSanitizer
+        run: |
+          git clone --depth 1 --branch "${NGINX_VERSION}" \
+            https://github.com/nginx/nginx.git /tmp/nginx-src
+          cd /tmp/nginx-src
+          ./auto/configure --with-debug --with-compat \
+            --add-module="${GITHUB_WORKSPACE}" \
+            --with-cc-opt="-fsanitize=address -fno-omit-frame-pointer -g" \
+            --with-ld-opt="-fsanitize=address"
+          make -j"$(nproc)"
+
+      - name: Run test suite under AddressSanitizer
+        # detect_leaks=0 — nginx leaves benign allocations live at the point
+        # Test::Nginx kills it. The post-run grep below catches real ASan
+        # reports written to /tmp/asan/asan.* even when prove returns 0.
+        env:
+          TEST_NGINX_BINARY: /tmp/nginx-src/objs/nginx
+          ASAN_OPTIONS: detect_leaks=0:abort_on_error=1:log_path=/tmp/asan/asan
+        run: |
+          mkdir -p /tmp/asan
+          export PATH=/tmp/nginx-src/objs:$PATH PERL5LIB=$HOME/perl5/lib/perl5
+          set +e
+          prove -v t/*.t
+          rc=$?
+          set -e
+          if grep -q "AddressSanitizer\|runtime error" /tmp/asan/asan.* 2>/dev/null; then
+            echo "::error::AddressSanitizer / UBSan reports detected"
+            cat /tmp/asan/asan.* >&2
+            exit 1
+          fi
+          exit $rc
